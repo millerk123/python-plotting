@@ -1,0 +1,46 @@
+simulation
+{
+    subplots = 2,
+    nstart = 0,
+    ndump = 10,
+    nend = 490,
+    dpi =300,
+    fig_size = 8,3 , !20 in x 40 in
+    fig_layout = 2,1 , ! 2 x 1 subplots
+    sim_dir = '',
+    save_dir = 'imag',
+    fontsize = 12,
+}
+
+
+}
+
+
+! #1 subplot
+data
+{
+        folders = "DIAG/pot",
+        title = "Electric Fields",
+        logscale = True,
+        lineout = False,
+        plot_type = 'slice'
+        min_max_overwrite = True,
+        maximum = 1, ! only needed if overwrite is true
+        minimum = -1, ! only needed if overwrite is true
+        threshold = 1.0e-5, ! only needed if overwrite and log plot are true
+        colormap = "seismic",
+}
+
+data
+{
+        folders = "DIAG/Vx_x",
+        title = "Electron Phase Space",
+        logscale = True,
+        lineout = False,
+        plot_type = 'slice'
+        min_max_overwrite = True,
+        maximum = 100, ! only needed if overwrite is true
+        minimum = -1, ! only needed if overwrite is true
+        log_threshold = 1.0e-3, ! only needed if overwrite and log plot are true
+        colormap = "rainbow",
+}

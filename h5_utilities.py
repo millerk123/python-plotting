@@ -2,6 +2,7 @@ import matplotlib
 import matplotlib.cm
 import matplotlib.colors
 import h5py
+import h5py.highlevel
 import numpy as np
 from numpy import *
 from pylab import *

@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.ticker as ticker
 from h5_utilities import *
-from analysis import analysis
+from analysis import analysis, reflect
 import re
 from str2keywords import str2keywords
 # global parameters
@@ -20,6 +20,57 @@ general_flag, subplot_flag = 'simulation', 'data'
 cpu_count = multiprocessing.cpu_count()
 # match commas not inside single or double quotes
 option_pattern = re.compile(''',(?=(?:(?:[^"']*"[^"']*")|(?:[^'"]*'[^'"]*'))*[^"']*$)''')
+delta = 0.01
+cdict_BR = {'red':  ((0.0, 0.0, 0.0),
+                   (0.25, 0.0, 0.0),
+                   (.5-delta, 0.9, 0.9),
+                   (0.5, 1.0, 1.0),
+                   (0.75, 1.0, 1.0),
+                   (1.0, 0.35, 1.0)),
+
+         'green': ((0.0, 0.0, 0.0),
+                   (0.25, 0.0, 0.0),
+                   (0.5-delta, 0.9, 0.9),
+                   (0.5, 1.0, 1.0),
+                   (0.5+delta, 0.9, 0.9),
+                   (0.75, 0.0, 0.0),
+                   (1.0, 0.0, 0.0)),
+
+         'blue':  ((0.0, 0.0, 0.35),
+                   (0.25, 1.0, 1.0),
+                   (0.5, 1.0, 1.0),
+                   (0.5+delta, 0.9, 0.9),
+                   (0.75, 0.0, 0.0),
+                   (1.0, 0.0, 0.0))
+        }
+
+delta = 0.04
+cm = matplotlib.cm.get_cmap('jet')
+cdict_Jet = {'red':  ((0.0, 0.0, 0.0),
+                   (0.35, 0.0, 0.0),
+                   (0.5-delta, cm(0.5-delta)[0], cm(0.5-delta)[0]),
+                   (0.5, 1.0, 1.0),
+                   (0.5+delta, cm(0.5+delta)[0], cm(0.5+delta)[0]),
+                   (0.66, 1.0, 1.0),
+                   (0.89, 1.0, 1.0),
+                   (1.0, 0.5, 0.5)),
+
+         'green': ((0.0, 0.0, 0.0),
+                   (0.12, 0.0, 0.0),
+                   (0.38, 1.0, 1.0),
+                   (0.64, 1.0, 1.0),
+                   (0.91, 0.0, 0.0),
+                   (1.0, 0.0, 0.0)),
+
+         'blue':  ((0.0, 0.5, 0.5),
+                   (0.11, 1.0, 1.0),
+                   (0.34, 1.0, 1.0),
+                   (0.5-delta, cm(0.5-delta)[2], cm(0.5-delta)[2]),
+                   (0.5, 1.0, 1.0),
+                   (0.5+delta, cm(0.5+delta)[2], cm(0.5+delta)[2]),
+                   (0.65, 0.0, 0.0),
+                   (1.0, 0.0, 0.0))
+        }
 
 
 def main():
@@ -86,6 +137,8 @@ def fmt(x, pos):
 
 
 def visualize(plot, indices):
+    plt.register_cmap(name='BlueRed', data=cdict_BR)
+    plt.register_cmap(name='Jet', data=cdict_Jet)
     subplots = plot.subplots
     title = ''
     for num in xrange(len(subplots)):
@@ -94,6 +147,7 @@ def visualize(plot, indices):
         out_title = subplots[num].graph(fig, indices, num + 1)
         title = max([title, out_title], key=len)
     plt.suptitle(title, fontsize=plot.general_dict['fontsize'][0] * 1.2)
+    plt.tight_layout(rect=[0,0,1,.97])
     fol = plot.general_dict['save_dir'][0]
     if (fol[len(fol) - 1] != '/'):
         fol = fol + '/'
@@ -181,9 +235,9 @@ class Subplot(Plot):
         self.params = general_params
         self.types = {'folders': str, 'title': str, 'log_threshold': float, \
                       'plot_type': str, 'maximum': float, 'minimum': float, \
-                      'colormap': str, 'legend': str, 'markers': str, \
-                      'x1_zoom': int, 'x2_zoom': int, 'x3_zoom': int, 'norm': str, 'side': str, 'bounds': str, \
-                      'use_dir': str, 'linewidth': float, 'operation': str2keywords}
+                      'colormap': str, 'midpoint': float, 'legend': str, 'markers': str, \
+                      'x1_lims': float, 'x2_lims': float, 'x3_lims': float, 'norm': str, 'side': str, 'bounds': str, \
+                      'use_dir': str, 'linewidth': float, 'operation': str2keywords, 'transpose': bool}
         self.left = 0
         self.right = 0
         self.general_dict = {}
@@ -296,6 +350,15 @@ class Subplot(Plot):
             return self.general_dict['maximum'][0], self.general_dict['minimum'][0]
         else:
             return self.general_dict['maximum'][1], self.general_dict['minimum'][1]
+
+    def get_x_lims(self, ax):
+        if (ax+'_lims' in self.general_dict.keys()):
+            lims = np.zeros(2)
+            for ind in xrange(len(self.general_dict[ax+'_lims'])):
+                lims[ind] = self.general_dict[ax+'_lims'][ind]
+            return lims
+        else:
+            return None
 
     def graph(self, figure, n_ind, subplot_num):
         fig = figure
@@ -531,10 +594,10 @@ class Subplot(Plot):
             data = self.get_data(file, file_num)
         except:
             data = read_hdf(file.filename).data
-        if ('operation' in self.general_dict.keys()):
-            data = analysis(data, self.general_dict['operation'])
         axes = self.get_axes(file_num)
         xx = self.construct_axis(file, axes[0], file_num)
+        if ('operation' in self.general_dict.keys()):
+            data,xx = analysis(data, self.general_dict['operation'], axes=xx)
         maximum, minimum = self.get_min_max(file_num)
         indices = self.get_indices(file_num)
         selectors = indices[1:-1]
@@ -544,7 +607,7 @@ class Subplot(Plot):
             label = self.get_name(file) + self.append_legend(file_num)
 
         if (self.is_log_plot(file_num)):
-            ax.plot(xx, data, self.get_marker(file_num), label=label, linewidth=self.get_linewidth())
+            l, = ax.plot(xx, data, self.get_marker(file_num), label=label, linewidth=self.get_linewidth())
             side = self.general_dict['side'][file_num]
             if (side == 'left'):
                 ind = 0
@@ -555,12 +618,30 @@ class Subplot(Plot):
             ax.set_ylim([minimum, maximum])
 
         else:
-            ax.plot(xx, data, self.get_marker(file_num), label=label, linewidth=self.get_linewidth())
+            l, = ax.plot(xx, data, self.get_marker(file_num), label=label, linewidth=self.get_linewidth())
             ax.set_ylim([minimum, maximum])
             ax.minorticks_on()
             plt.ticklabel_format(style='sci', axis='y', scilimits=(0, 0))
 
+        if ('operation' in self.general_dict.keys()):
+            for op in self.general_dict['operation']:
+                if op == 'hilbert_env':
+                    file_0 = h5py.File(self.file_names[file_num] + str(int(1000000 + 0))[1:] + '.h5', 'r')
+                    try:
+                        data_0 = self.get_data(file_0, file_num)
+                    except:
+                        data_0 = read_hdf(file_0.filename).data
+                    data_0 = analysis(data_0, self.general_dict['operation'])
+                    label = self.get_name(file_0) + self.append_legend(file_num)
+                    ax.plot(xx, data_0, self.get_marker(file_num), label=label, linewidth=self.get_linewidth(), \
+                        color=l.get_color())
+                    file_0.close()
+
+        ax.set_xlim(self.get_x_lims('x1'))
+
         self.set_labels(ax, file, axes, file_num)
+
+        plt.title(self.general_dict['title'][file_num],fontsize = self.fontsize())
 
     def get_linewidth(self):
         if ('linewidth' in self.general_dict.keys()):
@@ -592,6 +673,8 @@ class Subplot(Plot):
         axes = self.get_axes(file_num)
         axis1 = self.construct_axis(file, axes[0], file_num)
         axis2 = self.construct_axis(file, axes[1], file_num)
+        if ('operation' in self.general_dict.keys()):
+            axis2 = reflect(axis2, self.general_dict['operation'])
         grid_bounds = [axis1[0], axis1[-1], axis2[0], axis2[-1]]
 
         maximum, minimum = self.get_min_max(file_num)
@@ -614,7 +697,7 @@ class Subplot(Plot):
         else:
             imAx = ax.imshow(data, aspect='auto', origin='lower', \
                              interpolation='bilinear', vmin=minimum, vmax=maximum, extent=grid_bounds,
-                             cmap=self.get_colormap(file_num))
+                             cmap=self.get_colormap(file_num),norm=self.get_norm(file_num))
 
         indices = self.get_indices(file_num)
         selectors = indices[1:-1]
@@ -630,7 +713,10 @@ class Subplot(Plot):
 
         self.set_labels(ax, file, axes, file_num)
 
-    # plt.title(,fontsize = self.fontsize())
+        ax.set_xlim(self.get_x_lims('x1'))
+        ax.set_ylim(self.get_x_lims('x2'))
+
+        plt.title(self.general_dict['title'][file_num],fontsize = self.fontsize())
 
 
     def set_labels(self, ax, file, axes, file_num):
@@ -736,6 +822,12 @@ class Subplot(Plot):
         else:
             return None
 
+    def get_norm(self, file_num):
+        if ('midpoint' in self.general_dict.keys()):
+            return MidpointNormalize(midpoint=self.general_dict['midpoint'][file_num])
+        else:
+            return None
+
     def is_log_plot(self, file_num):
         side = self.general_dict['side'][file_num]
         if (side == 'left'):
@@ -766,7 +858,7 @@ class Subplot(Plot):
                 for ii in range(size(h5_data.axes)):
                     if label == h5_data.axes[ii].attributes['NAME']:
                         ind = ii
-                axis = [h5_data.axes[ii].axis_max, h5_data.axes[ii].axis_min]
+                axis = [h5_data.axes[ii].axis_min, h5_data.axes[ii].axis_max]
                 NX1 = h5_data.shape[ii]
                 return (axis[1] - axis[0]) * np.arange(NX1) / float(NX1) + axis[0]
 
@@ -801,6 +893,17 @@ class Subplot(Plot):
             return 1, 'AXIS2'
         else:
             return 2, 'AXIS3'
+
+class MidpointNormalize(matplotlib.colors.Normalize):
+    def __init__(self, vmin=None, vmax=None, midpoint=None, clip=False):
+        self.midpoint = midpoint
+        matplotlib.colors.Normalize.__init__(self, vmin, vmax, clip)
+
+    def __call__(self, value, clip=None):
+        # I'm ignoring masked values and all kinds of edge cases to make a
+        # simple example...
+        x, y = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
+        return np.ma.masked_array(np.interp(value, x, y))
 
 
 if __name__ == "__main__":

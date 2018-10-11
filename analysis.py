@@ -33,13 +33,33 @@ def analysis(data, ops_list, axes=None):
         elif op == 'fft':
             ax = op.keywords.get('axes', None)
             data = np.fft.fftshift(np.fft.fftn(np.fft.ifftshift(data, axes=ax), **op.keywords), axes=ax)
+            if axes is not None:
+                dx = axes[1] - axes[0]
+                axes = 2*np.pi*np.fft.fftshift(np.fft.fftfreq(len(axes),dx))
         elif op == 'ifft':
             ax = op.keywords.get('axes', None)
             data = np.fft.ifftshift(np.fft.ifftn(np.fft.fftshift(data, axes=ax), **op.keywords), axes=ax)
-    if axes:
+        elif op == 'transpose':
+            data = np.transpose(data)
+        elif op == 'reflect':
+            data = np.concatenate((np.flip(data[1:,:],0),data[1:,:]),axis=0)
+    if axes is not None:
         return data, axes
     else:
         return data
+
+def reflect(axis, ops_list):
+    """
+    Reflect axis limits
+    
+    :param axis: 1D array of length 2
+    :param ops_list: list of operations (str2keywords objects)
+    :return: return reflected axis
+    """
+    for op in ops_list:
+        if op == 'reflect':
+            axis[0] = -axis[-1]
+    return axis
 
 # tests
 if __name__ == '__main__':

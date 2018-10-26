@@ -514,7 +514,7 @@ class Subplot(Plot):
                 elif (selectors[0] == 'x2'):
                     return data[x3_ind, :, x2_ind]
                 else:
-                    return data[:, x3_ind, x1_ind]
+                    return data[:, x3_ind, x2_ind]
             else:
                 x2_ind = int(selectors[1])
                 if (selectors[0] == 'x1'):

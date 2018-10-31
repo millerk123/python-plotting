@@ -46,6 +46,8 @@ def analysis(data, ops_list, axes=None):
             data = np.transpose(data)
         elif op == 'reflect':
             data = np.concatenate((np.flip(data[1:,:],0),data[1:,:]),axis=0)
+        elif op == 'reflect_neg':
+            data = np.concatenate((-1*np.flip(data[1:,:],0),data[1:,:]),axis=0)
     if axes is not None:
         return data, axes
     else:

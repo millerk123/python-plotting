@@ -237,7 +237,8 @@ class Subplot(Plot):
                       'plot_type': str, 'maximum': float, 'minimum': float, \
                       'colormap': str, 'midpoint': float, 'legend': str, 'markers': str, \
                       'x1_lims': float, 'x2_lims': float, 'x3_lims': float, 'norm': str, 'side': str, 'bounds': str, \
-                      'use_dir': str, 'linewidth': float, 'operation': str2keywords, 'transpose': bool}
+                      'use_dir': str, 'linewidth': float, 'operation': str2keywords, 'transpose': bool, \
+                      'x_label': str, 'y_label': str }
         self.left = 0
         self.right = 0
         self.general_dict = {}
@@ -748,6 +749,10 @@ class Subplot(Plot):
                 else:
                     ax.set_xlabel(self.axis_label(file, axes[0], selectors[0]), fontsize=self.fontsize())
                     ax.set_ylabel(self.get_units(file, 'q'), fontsize=self.fontsize())
+        if ('x_label' in self.general_dict.keys()):
+            ax.set_xlabel(self.general_dict['x_label'][0], fontsize=self.fontsize())
+        if ('y_label' in self.general_dict.keys()):
+            ax.set_ylabel(self.general_dict['y_label'][0], fontsize=self.fontsize())
 
     def get_marker(self, file_num):
         if ('markers' in self.general_dict.keys() and file_num < len(self.general_dict['markers'])):

@@ -35,7 +35,10 @@ def analysis(data, ops_list, axes=None):
             data = np.fft.fftshift(np.fft.fftn(np.fft.ifftshift(data, axes=ax), **op.keywords), axes=ax)
             if axes is not None:
                 dx = axes[1] - axes[0]
-                axes = 2*np.pi*np.fft.fftshift(np.fft.fftfreq(len(axes),dx))
+                if 'mode_num' in ops_list:
+                    axes = np.fft.fftshift(np.fft.fftfreq(len(axes),1./len(axes)))
+                else:
+                    axes = 2*np.pi*np.fft.fftshift(np.fft.fftfreq(len(axes),dx))
         elif op == 'ifft':
             ax = op.keywords.get('axes', None)
             data = np.fft.ifftshift(np.fft.ifftn(np.fft.fftshift(data, axes=ax), **op.keywords), axes=ax)

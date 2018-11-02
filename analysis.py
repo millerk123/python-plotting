@@ -62,7 +62,7 @@ def reflect(axis, ops_list):
     :return: return reflected axis
     """
     for op in ops_list:
-        if op == 'reflect':
+        if (op == 'reflect' or op == 'reflect_neg'):
             axis[0] = -axis[-1]
     return axis
 

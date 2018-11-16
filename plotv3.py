@@ -392,13 +392,25 @@ class Subplot(Plot):
                         self.plot_raw(file, file_num, ax, fig)
                     elif (plot_type == 'lineout'):
                         self.plot_lineout(file, file_num, ax, fig)
+                    elif (plot_type == 'slice_contour'):
+                        if file_num == 0:
+                            self.plot_grid(file, file_num, ax, fig)
+                            nstart, ndump, nend = self.get_nfac(file_num+1)
+                            nn = ndump * n_ind + nstart
+                            file2 = h5py.File(self.file_names[file_num+1] + str(int(1000000 + nn))[1:] + '.h5', 'r')
+                            self.plot_contour(file, file2, file_num, ax, fig)
+                            time = time + str(file.attrs['TIME'][0])
+                            file.close()
+                            file2.close()
+                            break
 
                     plot_prev = plot_type
                     time = time + str(file.attrs['TIME'][0])
                     if (file_num < len(self.file_names) - 1):
                         time = time + ','
                     file.close()
-            self.set_legend(key, ax)
+            if (not plot_type == 'slice_contour'):
+                self.set_legend(key, ax)
 
         time = time + '$'
         return time
@@ -465,7 +477,7 @@ class Subplot(Plot):
         while (True):
             if (index == len(plot_types)):
                 break
-            if (plot_types[index].lower() in ['slice', 'lineout', 'raw']):
+            if (plot_types[index].lower() in ['slice', 'lineout', 'raw', 'slice_contour']):
                 if (ctr == (file_num + 1)):
                     break
                 ctr += 1
@@ -484,7 +496,7 @@ class Subplot(Plot):
         axis_labels = []
         if ('axes' not in self.general_dict.keys()):
             self.general_dict['axes'] = []
-        if (plot_type == 'slice' or plot_type == 'lineout'):
+        if (plot_type == 'slice' or plot_type == 'lineout' or plot_type == 'slice_contour'):
             axes = file['AXIS']
             for j in axes.keys():
                 axis_labels.append(axes[j].attrs['NAME'][0])
@@ -494,7 +506,7 @@ class Subplot(Plot):
                 data = (file[file.attrs['NAME'][0]][:])
                 return data
 
-        if (plot_type == 'slice'):
+        if (plot_type == 'slice' or plot_type == 'slice_contour'):
             axis_labels.remove(selectors[0])
             self.general_dict['axes'].extend(axis_labels)
             data = (file[file.attrs['NAME'][0]][:])
@@ -719,6 +731,26 @@ class Subplot(Plot):
 
         plt.title(self.general_dict['title'][file_num],fontsize = self.fontsize())
 
+    def plot_contour(self, file1, file2, file_num, ax, fig):
+        try:
+            data = self.get_data(file2, file_num+1)
+        except:
+            data = read_hdf(file2.filename).data
+        if ('operation' in self.general_dict.keys()):
+            data = analysis(data, self.general_dict['operation'])
+        axes = self.get_axes(file_num)
+        axis1 = self.construct_axis(file1, axes[0], file_num)
+        axis2 = self.construct_axis(file1, axes[1], file_num)
+        if ('operation' in self.general_dict.keys()):
+            axis2 = reflect(axis2, self.general_dict['operation'])
+        grid_bounds = [axis1[0], axis1[-1], axis2[0], axis2[-1]]
+
+        levels = np.linspace(1.5,np.max(data)-0.5,int(np.max(data)+.001)-1)
+
+        rep = np.array([len(axis1)/data.shape[1], len(axis2)/data.shape[0]])
+
+        imAx = ax.contour(np.kron(data, np.ones((rep[1],rep[0]))), levels=levels,
+            linewidths=0.5, colors=self.get_colormap(file_num+1), extent=grid_bounds)
 
     def set_labels(self, ax, file, axes, file_num):
         select = {'left': self.left, 'right': self.right}
@@ -731,7 +763,7 @@ class Subplot(Plot):
             else:
                 ax.set_xlabel(self.axis_label(file, axes[0]), fontsize=self.fontsize())
                 ax.set_ylabel(self.get_units(file), fontsize=self.fontsize())
-        elif (plot_type == 'slice'):
+        elif (plot_type == 'slice' or plot_type == 'slice_contour'):
             ax.set_xlabel(self.axis_label(file, axes[0]), fontsize=self.fontsize())
             ax.set_ylabel(self.axis_label(file, axes[1]), fontsize=self.fontsize())
         elif (plot_type == 'raw'):
@@ -799,14 +831,14 @@ class Subplot(Plot):
         for num in xrange(file_num):
             indices = self.get_indices(num)
             typex = indices[0]
-            if (typex == 'slice'):
+            if (typex == 'slice' or typex == 'slice_contour'):
                 count += 2
             elif (typex == 'lineout'):
                 count += 1
             if (typex == 'raw'):
                 count += len(indices[1:]) - 1
 
-        if (self.get_indices(file_num)[0] == 'slice'):
+        if (self.get_indices(file_num)[0] == 'slice' or self.get_indices(file_num)[0] == 'slice_contour'):
             nn = 2
         elif (self.get_indices(file_num)[0] == 'lineout'):
             nn = 1

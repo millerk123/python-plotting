@@ -306,6 +306,8 @@ class Subplot(Plot):
         min_max_pairs = []
 
         for index in xrange(len(folders)):
+            if (self.get_indices(0)[0]=='slice_contour' and index>0):
+                break
             nstart, ndump, nend = self.get_nfac(index)
 
             out = Parallel(n_jobs=cpu_count)(
@@ -326,6 +328,8 @@ class Subplot(Plot):
             maximum, minimum = None, None
         mins, maxs = [np.inf, np.inf], [-np.inf, -np.inf]
         for file_num in xrange(len(folders)):
+            if (self.get_indices(0)[0]=='slice_contour' and file_num>0):
+                break
             mn, mx = min_max_pairs[file_num]
             if (self.general_dict['side'][file_num] == 'left'):
                 mins[0] = min(mins[0], mn)

@@ -2,7 +2,6 @@ import matplotlib
 import matplotlib.cm
 import matplotlib.colors
 import h5py
-import h5py.highlevel
 import numpy as np
 from numpy import *
 from pylab import *
@@ -301,7 +300,7 @@ def read_hdf(filename):
 def scan_hdf5_file_for_main_data_array(file):
 	datasetName = ""
 	for k,v in file.items():
-		if isinstance(v, h5py.highlevel.Dataset):
+		if isinstance(v, h5py.Dataset):
 			datasetName = k
 			break
 	return file[datasetName]

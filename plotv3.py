@@ -899,8 +899,8 @@ class Subplot(Plot):
                 for ii in range(size(h5_data.axes)):
                     if label == h5_data.axes[ii].attributes['NAME']:
                         ind = ii
-                axis = [h5_data.axes[ii].axis_min, h5_data.axes[ii].axis_max]
-                NX1 = h5_data.shape[ii]
+                axis = [h5_data.axes[ind].axis_min, h5_data.axes[ind].axis_max]
+                NX1 = h5_data.shape[ind]
                 return (axis[1] - axis[0]) * np.arange(NX1) / float(NX1) + axis[0]
 
     def axis_bounds(self, file, label):

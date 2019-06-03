@@ -295,7 +295,75 @@ def read_hdf(filename):
 	
 	data_file1.close()
 	return data_bundle
+
+
+def read_hdf_axes(filename):
+	"""
+	HDF reader for Osiris/Visxd compatable HDF files... This will slurp in the
+	only the attributes that describe the data (e.g. title, units, scale). 
 	
+	Usage:
+			diag_data = read_hdf('e1-000006.h5')
+			
+			print diag_data.run_attributes['TIME']		# prints the simulation time associated with the hdf5 file
+			diag_data.data_attributes['UNITS']     		# print units of the dataset points
+			list(diag_data.data_attributes)         	# lists all variables in 'data_attributes'
+			list(diag_data.run_attributes)         		# lists all vairables in 'run_attributes'
+			print diag_data.axes[0].attributes['UNITS']	# prints units of  X-axis
+			list(diag_data.axes[0].attributes['UNITS'])	# lists all variables of the X-axis
+			
+	
+	(See bottom of file 'hdf.py' for more techincal information.)
+	
+	"""
+	
+	
+	data_file1 = h5py.File(filename, 'r')
+	
+	the_data_hdf_object = scan_hdf5_file_for_main_data_array(data_file1)
+	dim = len(the_data_hdf_object.shape)
+	
+	data_bundle = hdf_data()
+	data_bundle.filename = filename
+	data_bundle.dim = len(the_data_hdf_object.shape)
+	data_bundle.shape = list(the_data_hdf_object.shape)
+	
+	# now read in attributes of the ROOT of the hdf5.. t
+	#   there's lots of good info there.
+	for key,value in data_file1.attrs.items():
+		data_bundle.run_attributes[key] = value
+		setattr(data_bundle, str(key), value)
+	
+	# attach attributes assigned to the data array to 
+	#	the hdf_data.data_attrs object
+	for key, value in the_data_hdf_object.attrs.items():
+		data_bundle.data_attributes[key] = value
+	
+	axis_number = 1
+	
+	while True:
+		try:
+			# try to open up another AXIS object in the HDF's attribute directory
+			#  (they are named /AXIS/AXIS1, /AXIS/AXIS2, /AXIS/AXIS3 ...)
+			axis_to_look_for = "/AXIS/AXIS" + str(axis_number)
+			axis =  data_file1[axis_to_look_for]
+			axis_data = axis[:]
+			axis_min = axis_data.item(0)
+			axis_max = axis_data.item(1)
+			axis_numberpoints = the_data_hdf_object.shape[axis_number-1]
+			
+			data_axis = data_basic_axis(axis_number, axis_min, axis_max, axis_numberpoints)
+			data_bundle.axes.append(data_axis)
+			# get the attributes for the JUST ADDED AXIS
+			for key, value in axis.attrs.items():
+				data_axis.attributes[key] = value
+		except:
+			break
+		axis_number += 1
+	
+	data_file1.close()
+	return data_bundle
+
 
 def scan_hdf5_file_for_main_data_array(file):
 	datasetName = ""

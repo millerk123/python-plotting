@@ -768,8 +768,8 @@ class Subplot(Plot):
                 ax.set_xlabel(self.axis_label(file, axes[0]), fontsize=self.fontsize())
                 ax.set_ylabel(self.get_units(file), fontsize=self.fontsize())
         elif (plot_type == 'slice' or plot_type == 'slice_contour'):
-            ax.set_xlabel(self.axis_label(file, axes[0]), fontsize=self.fontsize())
-            ax.set_ylabel(self.axis_label(file, axes[1]), fontsize=self.fontsize())
+            ax.set_xlabel(self.axis_label(file, axes[0], ax_num=0), fontsize=self.fontsize())
+            ax.set_ylabel(self.axis_label(file, axes[1], ax_num=1), fontsize=self.fontsize())
         elif (plot_type == 'raw'):
             indices = self.get_indices(file_num)
             selectors = indices[1:-1]
@@ -888,20 +888,14 @@ class Subplot(Plot):
             else:
                 return self.raw_edges[file_num][1]
         else:
-            try:
-                ind, ax = self.select_var(label)
-                axis = file['AXIS'][ax][:]
-                NX1 = file.attrs['NX'][ind]
-                return (axis[1] - axis[0]) * np.arange(NX1) / float(NX1) + axis[0]
-            except:
-                h5_data = read_hdf(file.filename)
-                ind = size(h5_data.axes)
-                for ii in range(size(h5_data.axes)):
-                    if label == h5_data.axes[ii].attributes['NAME']:
-                        ind = ii
-                axis = [h5_data.axes[ind].axis_min, h5_data.axes[ind].axis_max]
-                NX1 = h5_data.shape[ind]
-                return (axis[1] - axis[0]) * np.arange(NX1) / float(NX1) + axis[0]
+            h5_data = read_hdf_axes(file.filename)
+            ind = size(h5_data.axes)
+            for ii in range(size(h5_data.axes)):
+                if label == h5_data.axes[ii].attributes['NAME']:
+                    ind = ii
+            axis = [h5_data.axes[ind].axis_min, h5_data.axes[ind].axis_max]
+            NX1 = h5_data.shape[len(h5_data.shape)-ind-1]
+            return (axis[1] - axis[0]) * np.arange(NX1) / float(NX1) + axis[0]
 
     def axis_bounds(self, file, label):
         ## assuming osiris notation
@@ -910,21 +904,27 @@ class Subplot(Plot):
         NX1 = file.attrs['NX'][ind]
         return axis
 
-    def axis_label(self, file, label, keyword=None):
+    def axis_label(self, file, label, keyword=None, ax_num=None):
         ## assuming osiris notation
         if (keyword == None):
-            ind, ax = self.select_var(label)
-            try:
-                data = file['AXIS'][ax]
-            except:
-                return label
+            if (ax_num == None):
+                ind, ax = self.select_var(label)
+                try:
+                    data = file['AXIS'][ax]
+                except:
+                    return label
+            else:
+                data = file['AXIS/AXIS'+str(ax_num+1)]
         else:
             if (keyword == 'r'):
                 return self.axis_label(file, 'x2', 'x2')
             data = file[keyword]
         UNITS = data.attrs['UNITS'][0]
         NAME = data.attrs['LONG_NAME'][0]
-        return r'${}\/[{}]$'.format(NAME, UNITS)
+        if UNITS == b'':
+            return r'${}$'.format(NAME)
+        else:
+            return r'${}\/[{}]$'.format(NAME, UNITS)
 
     def select_var(self, label):
         ind, ax = None, None

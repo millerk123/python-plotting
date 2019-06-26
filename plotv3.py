@@ -92,7 +92,11 @@ def main():
     x, y = dpi * fig_size[0], dpi * fig_size[1]
     if (x * y > 4000 * 2000):
         x, y = x / 2, y / 2
-    plots.parallel_visualize()
+
+    # read in dla_tracks if desired
+    dla_stuff = read_dla_tracks(plots)
+
+    plots.parallel_visualize(dla_stuff)
 
     if (dirs[len(dirs) - 1] != '/'):
         dirs = dirs + '/'
@@ -136,7 +140,23 @@ def fmt(x, pos):
     return x + '$\mathregular{' + '10^{{{}}}'.format(b) + '}$'
 
 
-def visualize(plot, indices):
+def read_dla_tracks(plots):
+    if (plots.general_dict['dla_tracks']):
+        sim_dir = plots.general_dict['sim_dir'][0]
+        if (len(sim_dir) > 0 and sim_dir[len(sim_dir) - 1] != '/'):
+            dla_data = np.load(sim_dir+'/dat.npy')
+            cumsum = np.load(sim_dir+'/cumsum.npy')
+            dla_time = np.load(sim_dir+'/time.npy')
+        else:
+            dla_data = np.load(sim_dir+'dat.npy')
+            cumsum = np.load(sim_dir+'cumsum.npy')
+            dla_time = np.load(sim_dir+'time.npy')
+        return (dla_data,cumsum,dla_time)
+    else:
+        return None
+
+
+def visualize(plot, indices, dla_stuff):
     plt.register_cmap(name='BlueRed', data=cdict_BR)
     plt.register_cmap(name='Jet', data=cdict_Jet)
     subplots = plot.subplots
@@ -144,7 +164,7 @@ def visualize(plot, indices):
     for num in xrange(len(subplots)):
         height, width = plot.general_dict['fig_size']
         fig = plt.figure(1, figsize=(height, width))
-        out_title = subplots[num].graph(fig, indices, num + 1)
+        out_title = subplots[num].graph(fig, indices, num + 1, dla_stuff)
         title = max([title, out_title], key=len)
     plt.suptitle(title, fontsize=plot.general_dict['fontsize'][0] * 1.2)
     plt.tight_layout(rect=[0,0,1,.97])
@@ -160,7 +180,7 @@ class Plot:
         # if you want extra parameters at start modify self.types
         self.types = {'subplots': int, 'nstart': int, 'nend': int, 'ndump': int, \
                       'dpi': int, 'fig_size': float, 'fig_layout': int, 'fontsize': int, 'save_dir': str,
-                      'sim_dir': str}
+                      'sim_dir': str, 'dla_tracks': bool}
         # size in inches, dpi for image quality, configuration for plot layouts
 
 
@@ -176,6 +196,10 @@ class Plot:
         # string = text.lower()
         string = self.find_section(text, ind, self.flag)
         self.read_lines(string)
+
+        # set dla_tracks to false if not present
+        if ('dla_tracks' not in self.general_dict.keys()):
+            self.general_dict['dla_tracks'] = False
 
     def find_section(self, text, ind, keyword):
         lines = text.splitlines()
@@ -223,10 +247,10 @@ class Plot:
                     out.append(cast_type(ele))
         return out
 
-    def parallel_visualize(self):
+    def parallel_visualize(self, dla_stuff):
         nstart, ndump, nend = self.general_dict['nstart'], self.general_dict['ndump'], self.general_dict['nend']
         total_num = (np.array(nend) - np.array(nstart)) / np.array(ndump)
-        Parallel(n_jobs=cpu_count)(delayed(visualize)(self, nn) for nn in xrange(np.min(total_num) + 1))
+        Parallel(n_jobs=cpu_count)(delayed(visualize)(self, nn, dla_stuff) for nn in xrange(np.min(total_num) + 1))
 
 
 class Subplot(Plot):
@@ -238,7 +262,7 @@ class Subplot(Plot):
                       'colormap': str, 'midpoint': float, 'legend': str, 'markers': str, \
                       'x1_lims': float, 'x2_lims': float, 'x3_lims': float, 'norm': str, 'side': str, 'bounds': str, \
                       'use_dir': str, 'linewidth': float, 'operation': str2keywords, 'transpose': bool, \
-                      'x_label': str, 'y_label': str }
+                      'x_label': str, 'y_label': str, 'dla_tracks': bool }
         self.left = 0
         self.right = 0
         self.general_dict = {}
@@ -365,7 +389,7 @@ class Subplot(Plot):
         else:
             return None
 
-    def graph(self, figure, n_ind, subplot_num):
+    def graph(self, figure, n_ind, subplot_num, dla_stuff):
         fig = figure
         rows, columns = self.params['fig_layout']
         ax_l = plt.subplot(rows, columns, subplot_num)
@@ -392,6 +416,19 @@ class Subplot(Plot):
 
                     if (plot_type == 'slice'):
                         self.plot_grid(file, file_num, ax, fig)
+                        if (self.general_dict['dla_tracks']):
+                            # dla_data, cumsum, dla_time = dla_stuff
+                            if (file.attrs['TIME'][0] >= dla_stuff[2][0]):
+                                ind=np.argmin(np.abs(dla_stuff[2]-file.attrs['TIME'][0]))
+                                axd2=plt.scatter(dla_stuff[0][:,1,ind],dla_stuff[0][:,2,ind],s=8,c=dla_stuff[1][:,1,ind]-dla_stuff[1][:,0,ind],cmap='PiYG',norm=MidpointNormalize(midpoint=0))
+
+                                divider = make_axes_locatable(plt.gca())
+                                cax2 = divider.new_horizontal(size="5%", pad=0.7, pack_start=True)
+                                fig.add_axes(cax2)
+                                cb2 = fig.colorbar(axd2,cax=cax2)
+                                cb2.ax.yaxis.set_ticks_position('left')
+                                cb2.set_label('$W_{DLA}-W_{LWFA}$ [MeV]')
+                                cb2.ax.yaxis.set_label_position('left')
                     elif (plot_type == 'raw'):
                         self.plot_raw(file, file_num, ax, fig)
                     elif (plot_type == 'lineout'):

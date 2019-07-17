@@ -12,13 +12,13 @@ def update_fft_axes(axes, forward=True):
     return axes
 
 
-def analysis(data, ops_list, axes=None):
+def analysis(data, ops_list, axes1=None, axes2=None):
     """
     Analysis data and change axes accordingly
     
     :param data: array_like data
     :param ops_list: list of operations (str2keywords objects)
-    :param axes: list of axes (data_basic_axis objects) pass only the axes that need changes
+    :param axes1/2: list of axes (data_basic_axis objects) pass only the axes that need changes
     :return: return processed data (and axes if provided)  
     """
     for op in ops_list:
@@ -33,12 +33,18 @@ def analysis(data, ops_list, axes=None):
         elif op == 'fft':
             ax = op.keywords.get('axes', None)
             data = np.fft.fftshift(np.fft.fftn(np.fft.ifftshift(data, axes=ax), **op.keywords), axes=ax)
-            if axes is not None:
-                dx = axes[1] - axes[0]
+            if axes1 is not None:
+                dx = axes1[1] - axes1[0]
                 if 'mode_num' in ops_list:
-                    axes = np.fft.fftshift(np.fft.fftfreq(len(axes),1./len(axes)))
+                    axes1 = np.fft.fftshift(np.fft.fftfreq(len(axes1),1./len(axes1)))
                 else:
-                    axes = 2*np.pi*np.fft.fftshift(np.fft.fftfreq(len(axes),dx))
+                    axes1 = 2*np.pi*np.fft.fftshift(np.fft.fftfreq(len(axes1),dx))
+            if axes2 is not None:
+                dx = axes2[1] - axes2[0]
+                if 'mode_num' in ops_list:
+                    axes2 = np.fft.fftshift(np.fft.fftfreq(len(axes2),1./len(axes2)))
+                else:
+                    axes2 = 2*np.pi*np.fft.fftshift(np.fft.fftfreq(len(axes2),dx))
         elif op == 'ifft':
             ax = op.keywords.get('axes', None)
             data = np.fft.ifftshift(np.fft.ifftn(np.fft.fftshift(data, axes=ax), **op.keywords), axes=ax)
@@ -48,8 +54,12 @@ def analysis(data, ops_list, axes=None):
             data = np.concatenate((np.flip(data[1:,:],0),data[1:,:]),axis=0)
         elif op == 'reflect_neg':
             data = np.concatenate((-1*np.flip(data[1:,:],0),data[1:,:]),axis=0)
-    if axes is not None:
-        return data, axes
+    if axes1 is not None and axes2 is not None:
+        return data, axes1, axes2
+    elif axes1 is not None:
+        return data, axes1
+    elif axes2 is not None:
+        return data, axes2
     else:
         return data
 

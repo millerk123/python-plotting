@@ -651,7 +651,7 @@ class Subplot(Plot):
         axes = self.get_axes(file_num)
         xx = self.construct_axis(file, axes[0], file_num)
         if ('operation' in self.general_dict.keys()):
-            data,xx = analysis(data, self.general_dict['operation'], axes=xx)
+            data,xx = analysis(data, self.general_dict['operation'], axes1=xx)
         maximum, minimum = self.get_min_max(file_num)
         indices = self.get_indices(file_num)
         selectors = indices[1:-1]
@@ -722,11 +722,11 @@ class Subplot(Plot):
             data = self.get_data(file, file_num)
         except:
             data = read_hdf(file.filename).data
-        if ('operation' in self.general_dict.keys()):
-            data = analysis(data, self.general_dict['operation'])
         axes = self.get_axes(file_num)
         axis1 = self.construct_axis(file, axes[0], file_num)
         axis2 = self.construct_axis(file, axes[1], file_num)
+        if ('operation' in self.general_dict.keys()):
+            data, axis1, axis2 = analysis(data, self.general_dict['operation'], axes1=axis1, axes2=axis2)
         if ('operation' in self.general_dict.keys()):
             axis2 = reflect(axis2, self.general_dict['operation'])
         grid_bounds = [axis1[0], axis1[-1], axis2[0], axis2[-1]]

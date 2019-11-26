@@ -6,9 +6,9 @@ from scipy.signal import hilbert
 
 def update_fft_axes(axes, forward=True):
     if forward:
-        print 'forward transform'
+        print('forward transform')
     else:
-        print 'backward transform'
+        print('backward transform')
     return axes
 
 
@@ -82,7 +82,7 @@ if __name__ == '__main__':
     a = np.mgrid[:3, :3][0]
     # use ** to unpack the dictionary
     a = analysis(a, [kw])
-    print a
+    print(a)
 
 
 def autocorrelate_2d(data,axes=1):

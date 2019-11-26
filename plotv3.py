@@ -75,7 +75,7 @@ cdict_Jet = {'red':  ((0.0, 0.0, 0.0),
 
 def main():
     args = sys.argv
-    print 'num cores: ' + str(cpu_count)
+    print('num cores: ' + str(cpu_count))
     file = open(args[1], 'r')
     input_file = file.read()
     file.close()
@@ -101,7 +101,7 @@ def main():
     if (dirs[len(dirs) - 1] != '/'):
         dirs = dirs + '/'
     stdout = subprocess.check_output(['ffmpeg', '-encoders', '-v', 'quiet'])
-    for encoder in ['libx264', 'mpeg4', 'mpeg']:
+    for encoder in [b'libx264', b'mpeg4', b'mpeg']:
         if encoder in stdout:
             break
     else:
@@ -118,7 +118,7 @@ def get_bounds(self, file_name, num, file_num):
         data = self.get_data(file, file_num)
     except:
         data = read_hdf(file_name).data
-    if ('operation' in self.general_dict.keys()):
+    if ('operation' in list(self.general_dict.keys())):
         data = analysis(data, self.general_dict.get('operation'))
     minimum, maximum = np.min(data), np.max(data)
     file.close()
@@ -161,7 +161,7 @@ def visualize(plot, indices, dla_stuff):
     plt.register_cmap(name='Jet', data=cdict_Jet)
     subplots = plot.subplots
     title = ''
-    for num in xrange(len(subplots)):
+    for num in range(len(subplots)):
         height, width = plot.general_dict['fig_size']
         fig = plt.figure(1, figsize=(height, width))
         out_title = subplots[num].graph(fig, indices, num + 1, dla_stuff)
@@ -185,11 +185,11 @@ class Plot:
 
 
         self.flag = general_flag
-        self.general_keys = self.types.keys()
+        self.general_keys = list(self.types.keys())
         self.general_dict = {}
         self.subplots = []
         self.read_general_parameters(text, 0)
-        for num in xrange(self.general_dict['subplots'][0]):
+        for num in range(self.general_dict['subplots'][0]):
             self.subplots.append(Subplot(text, num, self.general_dict))
 
     def read_general_parameters(self, text, ind):
@@ -198,7 +198,7 @@ class Plot:
         self.read_lines(string)
 
         # set dla_tracks to false if not present
-        if ('dla_tracks' not in self.general_dict.keys()):
+        if ('dla_tracks' not in list(self.general_dict.keys())):
             self.general_dict['dla_tracks'] = False
 
     def find_section(self, text, ind, keyword):
@@ -250,7 +250,8 @@ class Plot:
     def parallel_visualize(self, dla_stuff):
         nstart, ndump, nend = self.general_dict['nstart'], self.general_dict['ndump'], self.general_dict['nend']
         total_num = (np.array(nend) - np.array(nstart)) / np.array(ndump)
-        Parallel(n_jobs=cpu_count)(delayed(visualize)(self, nn, dla_stuff) for nn in xrange(np.min(total_num) + 1))
+        Parallel(n_jobs=cpu_count)(delayed(visualize)(self, nn, dla_stuff) for nn in range( int(np.min(total_num) + 1) ))
+        # [visualize(self, nn, dla_stuff) for nn in range( int(np.min(total_num) + 1) )]
 
 
 class Subplot(Plot):
@@ -268,17 +269,17 @@ class Subplot(Plot):
         self.general_dict = {}
         self.raw_edges = {}
         self.file_names = []
-        self.general_keys = self.types.keys()
+        self.general_keys = list(self.types.keys())
         self.flag = subplot_flag
         self.read_general_parameters(text, num)
         self.get_file_names()
         self.count_sides()
         self.set_limits()
-        print self.general_dict
-        print self.raw_edges
+        print(self.general_dict)
+        print(self.raw_edges)
 
     def count_sides(self):
-        if ('side' in self.general_dict.keys()):
+        if ('side' in list(self.general_dict.keys())):
             for j in self.general_dict['side']:
                 if (j == 'left'):
                     self.left += 1
@@ -291,11 +292,11 @@ class Subplot(Plot):
 
     def get_file_names(self):
         folders = self.general_dict['folders']
-        for index in xrange(len(folders)):
+        for index in range(len(folders)):
             folder = folders[index]
-            if ('use_dir' not in self.general_dict.keys() or (
+            if ('use_dir' not in list(self.general_dict.keys()) or (
                 (index < len(self.general_dict['use_dir'])) and self.general_dict['use_dir'][index] == 'True')):
-                if ('sim_dir' in self.params.keys()):
+                if ('sim_dir' in list(self.params.keys())):
                     if (index < len(self.params['sim_dir'])):
                         sim_dir = self.params['sim_dir'][index]
                     else:
@@ -307,7 +308,7 @@ class Subplot(Plot):
                         folder = sim_dir + '/' + folder
                     else:
                         folder = sim_dir + folder
-            print folder
+            print(folder)
             if (folder[len(folder) - 1] == '/'):
                 new2 = glob.iglob(folder + '*.h5')
             else:
@@ -325,18 +326,19 @@ class Subplot(Plot):
 
     def set_limits(self):
         folders = self.general_dict['folders']
-        subplot_keys = self.general_dict.keys()
+        subplot_keys = list(self.general_dict.keys())
         minimum, maximum = None, None
         min_max_pairs = []
 
-        for index in xrange(len(folders)):
+        for index in range(len(folders)):
             if (self.get_indices(0)[0]=='slice_contour' and index>0):
                 break
             nstart, ndump, nend = self.get_nfac(index)
 
             out = Parallel(n_jobs=cpu_count)(
-                delayed(get_bounds)(self, self.file_names[index], nn, index) for nn in xrange(nstart, nend + 1, ndump))
-            print out
+                delayed(get_bounds)(self, self.file_names[index], nn, index) for nn in range(nstart, nend + 1, ndump))
+            # out = [get_bounds(self, self.file_names[index], nn, index) for nn in range(nstart, nend + 1, ndump)]
+            print(out)
             for mn, mx in out:
                 if (maximum == None):
                     maximum = mx
@@ -351,7 +353,7 @@ class Subplot(Plot):
             min_max_pairs.append((minimum, maximum))
             maximum, minimum = None, None
         mins, maxs = [np.inf, np.inf], [-np.inf, -np.inf]
-        for file_num in xrange(len(folders)):
+        for file_num in range(len(folders)):
             if (self.get_indices(0)[0]=='slice_contour' and file_num>0):
                 break
             mn, mx = min_max_pairs[file_num]
@@ -361,18 +363,18 @@ class Subplot(Plot):
             else:
                 mins[1] = min(mins[1], mn)
                 maxs[1] = max(maxs[1], mx)
-        if ('maximum' in self.general_dict.keys()):
-            for ind in xrange(len(self.general_dict['maximum'])):
+        if ('maximum' in list(self.general_dict.keys())):
+            for ind in range(len(self.general_dict['maximum'])):
                 if (self.general_dict['maximum'] != 'None'):
                     maxs[ind] = self.general_dict['maximum'][ind]
-        if ('minimum' in self.general_dict.keys()):
-            for ind in xrange(len(self.general_dict['minimum'])):
+        if ('minimum' in list(self.general_dict.keys())):
+            for ind in range(len(self.general_dict['minimum'])):
                 if (self.general_dict['minimum'] != 'None'):
                     mins[ind] = self.general_dict['minimum'][ind]
 
         self.general_dict['minimum'] = mins
         self.general_dict['maximum'] = maxs
-        print mins, maxs
+        print(mins, maxs)
 
     def get_min_max(self, file_num):
         if (self.general_dict['side'][file_num] == 'left'):
@@ -381,9 +383,9 @@ class Subplot(Plot):
             return self.general_dict['maximum'][1], self.general_dict['minimum'][1]
 
     def get_x_lims(self, ax):
-        if (ax+'_lims' in self.general_dict.keys()):
+        if (ax+'_lims' in list(self.general_dict.keys())):
             lims = np.zeros(2)
-            for ind in xrange(len(self.general_dict[ax+'_lims'])):
+            for ind in range(len(self.general_dict[ax+'_lims'])):
                 lims[ind] = self.general_dict[ax+'_lims'][ind]
             return lims
         else:
@@ -398,7 +400,7 @@ class Subplot(Plot):
 
         plot_prev = None
         len_file_names = 0
-        for j in xrange(2):
+        for j in range(2):
             if (j == 0):
                 key = 'left'
             else:
@@ -407,7 +409,7 @@ class Subplot(Plot):
                     break
                 else:
                     ax = ax_l.twinx()
-            for file_num in xrange(len(self.file_names)):
+            for file_num in range(len(self.file_names)):
                 if (self.general_dict['side'][file_num] == key):
                     nstart, ndump, nend = self.get_nfac(file_num)
                     nn = ndump * n_ind + nstart
@@ -500,13 +502,13 @@ class Subplot(Plot):
         dx = -1
         if (ll - ml > 4):
             dx = -2
-        for j in xrange(ll, ml, dx):
+        for j in range(ll, ml, dx):
             out.append(mn_sign * 10 ** (j))
         out.append(0)
         dx = 1
         if (mu - ml > 4):
             dx = 2
-        for j in xrange(ml + 1, mu + 1, dx):
+        for j in range(ml + 1, mu + 1, dx):
             out.append(mx_sign * 10 ** (j))
         return out
 
@@ -535,12 +537,12 @@ class Subplot(Plot):
             selectors = None
         plot_type = indices[0]
         axis_labels = []
-        if ('axes' not in self.general_dict.keys()):
+        if ('axes' not in list(self.general_dict.keys())):
             self.general_dict['axes'] = []
         if (plot_type == 'slice' or plot_type == 'lineout' or plot_type == 'slice_contour'):
             axes = file['AXIS']
-            for j in axes.keys():
-                axis_labels.append(axes[j].attrs['NAME'][0])
+            for j in list(axes.keys()):
+                axis_labels.append(axes[j].attrs['NAME'][0].decode('utf-8'))
 
             if (selectors == None):
                 self.general_dict['axes'].extend(axis_labels)
@@ -581,7 +583,7 @@ class Subplot(Plot):
                 self.general_dict['axes'].extend(selectors[:-1])
             dim = len(selectors[:-1])
             if (len(file['q'].shape) == 0):
-                print file['q'].shape
+                print(file['q'].shape)
                 if (dim == 2):
                     self.raw_edges[file_num] = [np.zeros(1), np.zeros(1)]
                     return np.zeros(1)
@@ -592,13 +594,13 @@ class Subplot(Plot):
             q_weight = file['q'][:]
             nx = file.attrs['NX'][:]
             dx = (file.attrs['XMAX'][:] - file.attrs['XMIN'][:]) / (nx)
-            if ('norm' in self.general_dict.keys() and file_num < len(self.general_dict['norm']) and
+            if ('norm' in list(self.general_dict.keys()) and file_num < len(self.general_dict['norm']) and
                         self.general_dict['norm'][file_num] == 'cylin'):
                 norm = np.pi * 2 * np.prod(dx)
             else:
                 norm = np.prod(dx)
-            print np.sum(q_weight * norm), 'charge', self.file_names[file_num], norm
-            print len(q_weight), 'length'
+            print(np.sum(q_weight * norm), 'charge', self.file_names[file_num], norm)
+            print(len(q_weight), 'length')
             if (dim == 2):
                 if (selectors[0] == 'r'):
                     data1 = ((file['x2'][:]) ** 2 + (file['x3'][:]) ** 2) ** (0.5)
@@ -630,13 +632,13 @@ class Subplot(Plot):
             return hist
 
     def append_legend(self, file_num):
-        if ('legend' in self.general_dict.keys() and file_num < len(self.general_dict['legend'])):
+        if ('legend' in list(self.general_dict.keys()) and file_num < len(self.general_dict['legend'])):
             return r'${}$'.format(self.general_dict['legend'][file_num])
         else:
             return ''
 
     def get_bounds(self, label):
-        if ('bounds' in self.general_dict.keys() and label in self.general_dict['bounds']):
+        if ('bounds' in list(self.general_dict.keys()) and label in self.general_dict['bounds']):
             bounds = self.general_dict['bounds']
             index = bounds.index(label) + 1
             return map(float, bounds[index:(index + 2)])
@@ -650,7 +652,7 @@ class Subplot(Plot):
             data = read_hdf(file.filename).data
         axes = self.get_axes(file_num)
         xx = self.construct_axis(file, axes[0], file_num)
-        if ('operation' in self.general_dict.keys()):
+        if ('operation' in list(self.general_dict.keys())):
             data,xx = analysis(data, self.general_dict['operation'], axes1=xx)
         maximum, minimum = self.get_min_max(file_num)
         indices = self.get_indices(file_num)
@@ -677,7 +679,7 @@ class Subplot(Plot):
             ax.minorticks_on()
             plt.ticklabel_format(style='sci', axis='y', scilimits=(0, 0))
 
-        if ('operation' in self.general_dict.keys()):
+        if ('operation' in list(self.general_dict.keys())):
             for op in self.general_dict['operation']:
                 if op == 'hilbert_env':
                     file_0 = h5py.File(self.file_names[file_num] + str(int(1000000 + 0))[1:] + '.h5', 'r')
@@ -698,7 +700,7 @@ class Subplot(Plot):
         plt.title(self.general_dict['title'][file_num],fontsize = self.fontsize())
 
     def get_linewidth(self):
-        if ('linewidth' in self.general_dict.keys()):
+        if ('linewidth' in list(self.general_dict.keys())):
             return self.general_dict['linewidth'][0]
         else:
             return 1
@@ -725,9 +727,9 @@ class Subplot(Plot):
         axes = self.get_axes(file_num)
         axis1 = self.construct_axis(file, axes[0], file_num)
         axis2 = self.construct_axis(file, axes[1], file_num)
-        if ('operation' in self.general_dict.keys()):
+        if ('operation' in list(self.general_dict.keys())):
             data, axis1, axis2 = analysis(data, self.general_dict['operation'], axes1=axis1, axes2=axis2)
-        if ('operation' in self.general_dict.keys()):
+        if ('operation' in list(self.general_dict.keys())):
             axis2 = reflect(axis2, self.general_dict['operation'])
         grid_bounds = [axis1[0], axis1[-1], axis2[0], axis2[-1]]
 
@@ -777,12 +779,12 @@ class Subplot(Plot):
             data = self.get_data(file2, file_num+1)
         except:
             data = read_hdf(file2.filename).data
-        if ('operation' in self.general_dict.keys()):
+        if ('operation' in list(self.general_dict.keys())):
             data = analysis(data, self.general_dict['operation'])
         axes = self.get_axes(file_num)
         axis1 = self.construct_axis(file1, axes[0], file_num)
         axis2 = self.construct_axis(file1, axes[1], file_num)
-        if ('operation' in self.general_dict.keys()):
+        if ('operation' in list(self.general_dict.keys())):
             axis2 = reflect(axis2, self.general_dict['operation'])
         grid_bounds = [axis1[0], axis1[-1], axis2[0], axis2[-1]]
 
@@ -822,13 +824,13 @@ class Subplot(Plot):
                 else:
                     ax.set_xlabel(self.axis_label(file, axes[0], selectors[0]), fontsize=self.fontsize())
                     ax.set_ylabel(self.get_units(file, 'q'), fontsize=self.fontsize())
-        if ('x_label' in self.general_dict.keys()):
+        if ('x_label' in list(self.general_dict.keys())):
             ax.set_xlabel(self.general_dict['x_label'][0], fontsize=self.fontsize())
-        if ('y_label' in self.general_dict.keys()):
+        if ('y_label' in list(self.general_dict.keys())):
             ax.set_ylabel(self.general_dict['y_label'][0], fontsize=self.fontsize())
 
     def get_marker(self, file_num):
-        if ('markers' in self.general_dict.keys() and file_num < len(self.general_dict['markers'])):
+        if ('markers' in list(self.general_dict.keys()) and file_num < len(self.general_dict['markers'])):
             return self.general_dict['markers'][file_num]
         else:
             return ''
@@ -842,34 +844,41 @@ class Subplot(Plot):
                 return '[a.u.]'
         else:
             data = file[keyword]
-        UNITS = data.attrs['UNITS'][0]
-        return r'$[{}]$'.format(UNITS)
+        try:
+            UNITS = data.attrs['UNITS'][0]
+        except:
+            UNITS = file.attrs['UNITS'][0]
+        return r'$[{}]$'.format(UNITS.decode('utf-8'))
 
     def get_name(self, file, keyword=None):
         ## assuming osiris notation
         if (keyword == None):
-            try:
-                data = file[file.attrs['NAME'][0]]
-            except:
-                return r'${}$'.format(file.attrs['NAME'][0])
+            return r'${}$'.format(file.attrs['NAME'][0].decode('utf-8'))
         else:
-            data = file[keyword]
-        NAME = data.attrs['LONG_NAME'][0]
-        return r'${}$'.format(NAME)
+            try:
+                NAME = file[keyword].attrs['LONG_NAME'][0]
+                return r'${}$'.format(NAME.decode('utf-8'))
+            except:
+                return r'${}$'.format(file.attrs['NAME'][0].decode('utf-8'))
 
     def get_long_name(self, file, keyword=None):
         ## assuming osiris notation
         if (keyword == None):
-            data = file[file.attrs['NAME'][0]]
+            NAME = file.attrs['LABEL'][0]
+            UNITS = file.attrs['UNITS'][0]
         else:
             data = file[keyword]
-        UNITS = data.attrs['UNITS'][0]
-        NAME = data.attrs['LONG_NAME'][0]
-        return r'${}\/[{}]$'.format(NAME, UNITS)
+            try:
+                NAME = data.attrs['LONG_NAME'][0]
+                UNITS = data.attrs['UNITS'][0]
+            except:
+                NAME = file.attrs['LABEL'][0]
+                UNITS = file.attrs['UNITS'][0]
+        return r'${}\/[{}]$'.format(NAME.decode('utf-8'), UNITS.decode('utf-8'))
 
     def get_axes(self, file_num):
         count, nn = 0, 0
-        for num in xrange(file_num):
+        for num in range(file_num):
             indices = self.get_indices(num)
             typex = indices[0]
             if (typex == 'slice' or typex == 'slice_contour'):
@@ -885,23 +894,23 @@ class Subplot(Plot):
             nn = 1
         elif (self.get_indices(file_num)[0] == 'raw'):
             nn = len(self.get_indices(file_num)[1:]) - 1
-        print self.general_dict['axes']
-        print count, count + nn
+        print(self.general_dict['axes'])
+        print(count, count + nn)
         return self.general_dict['axes'][count:(count + nn)]
 
     def fontsize(self):
-        if ('fontsize' in self.params.keys()):
+        if ('fontsize' in list(self.params.keys())):
             return self.params['fontsize'][0]
         return 16
 
     def get_colormap(self, file_num):
-        if ('colormap' in self.general_dict.keys()):
+        if ('colormap' in list(self.general_dict.keys())):
             return self.general_dict['colormap'][file_num]
         else:
             return None
 
     def get_norm(self, file_num):
-        if ('midpoint' in self.general_dict.keys()):
+        if ('midpoint' in list(self.general_dict.keys())):
             return MidpointNormalize(midpoint=self.general_dict['midpoint'][file_num])
         else:
             return None
@@ -912,14 +921,14 @@ class Subplot(Plot):
             ind = 0
         else:
             ind = 1
-        return 'log_threshold' in self.general_dict.keys() and type(self.general_dict['log_threshold'][ind]) is float
+        return 'log_threshold' in list(self.general_dict.keys()) and type(self.general_dict['log_threshold'][ind]) is float
 
     def construct_axis(self, file, label, file_num):
         ## assuming osiris notation
         indices = self.get_indices(file_num)
         selectors = indices[1:]
         if (indices[0] == 'raw'):
-            print file_num, label, selectors[0]
+            print(file_num, label, selectors[0])
             if (label == selectors[0]):
                 return self.raw_edges[file_num][0]
             else:
@@ -928,7 +937,7 @@ class Subplot(Plot):
             h5_data = read_hdf_axes(file.filename)
             ind = size(h5_data.axes)
             for ii in range(size(h5_data.axes)):
-                if label == h5_data.axes[ii].attributes['NAME']:
+                if label == h5_data.axes[ii].attributes['NAME'][0].decode('utf-8'):
                     ind = ii
             axis = [h5_data.axes[ind].axis_min, h5_data.axes[ind].axis_max]
             NX1 = h5_data.shape[len(h5_data.shape)-ind-1]
@@ -959,9 +968,9 @@ class Subplot(Plot):
         UNITS = data.attrs['UNITS'][0]
         NAME = data.attrs['LONG_NAME'][0]
         if UNITS == b'':
-            return r'${}$'.format(NAME)
+            return r'${}$'.format(NAME.decode('utf-8'))
         else:
-            return r'${}\/[{}]$'.format(NAME, UNITS)
+            return r'${}\/[{}]$'.format(NAME.decode('utf-8'), UNITS.decode('utf-8'))
 
     def select_var(self, label):
         ind, ax = None, None

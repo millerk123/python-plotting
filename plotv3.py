@@ -864,8 +864,12 @@ class Subplot(Plot):
     def get_long_name(self, file, keyword=None):
         ## assuming osiris notation
         if (keyword == None):
-            NAME = file.attrs['LABEL'][0]
-            UNITS = file.attrs['UNITS'][0]
+            try:
+                NAME = file.attrs['LABEL'][0]
+                UNITS = file.attrs['UNITS'][0]
+            except:
+                NAME = file[file.attrs['NAME'][0]].attrs['LONG_NAME'][0]
+                UNITS = file[file.attrs['NAME'][0]].attrs['UNITS'][0]
         else:
             data = file[keyword]
             try:

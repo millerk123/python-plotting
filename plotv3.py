@@ -180,7 +180,7 @@ class Plot:
         # if you want extra parameters at start modify self.types
         self.types = {'subplots': int, 'nstart': int, 'nend': int, 'ndump': int, \
                       'dpi': int, 'fig_size': float, 'fig_layout': int, 'fontsize': int, 'save_dir': str,
-                      'sim_dir': str, 'dla_tracks': bool}
+                      'sim_dir': str, 'dla_tracks': bool, 'cpu_count': int}
         # size in inches, dpi for image quality, configuration for plot layouts
 
 
@@ -250,6 +250,8 @@ class Plot:
     def parallel_visualize(self, dla_stuff):
         nstart, ndump, nend = self.general_dict['nstart'], self.general_dict['ndump'], self.general_dict['nend']
         total_num = (np.array(nend) - np.array(nstart)) / np.array(ndump)
+        if 'cpu_count' in self.general_dict.keys():
+            cpu_count = self.general_dict['cpu_count']
         Parallel(n_jobs=cpu_count)(delayed(visualize)(self, nn, dla_stuff) for nn in range( int(np.min(total_num) + 1) ))
         # [visualize(self, nn, dla_stuff) for nn in range( int(np.min(total_num) + 1) )]
 

@@ -973,7 +973,6 @@ class Subplot(Plot):
         NAME = data.attrs['LONG_NAME'][0]
 
         # Check if FFT, for now assume it happens along both directions
-        fft = False
         if ('operation' in list(self.general_dict.keys())):
             for op in self.general_dict['operation']:
                 if op == 'fft':

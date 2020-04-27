@@ -85,8 +85,8 @@ def main():
     if not os.path.exists(dirs):
         os.makedirs(dirs)
     # else:
-    # 	shutil.rmtree(dirs)
-    # 	os.makedirs(dirs)
+    #     shutil.rmtree(dirs)
+    #     os.makedirs(dirs)
     dpi = plots.general_dict['dpi'][0]
     fig_size = plots.general_dict['fig_size']
     x, y = dpi * fig_size[0], dpi * fig_size[1]
@@ -971,6 +971,14 @@ class Subplot(Plot):
             data = file[keyword]
         UNITS = data.attrs['UNITS'][0]
         NAME = data.attrs['LONG_NAME'][0]
+
+        # Check if FFT, for now assume it happens along both directions
+        fft = False
+        if ('operation' in list(self.general_dict.keys())):
+            for op in self.general_dict['operation']:
+                if op == 'fft':
+                    return r'$k_{}\/[\omega_p/c]$'.format(ax_num+1)
+
         if UNITS == b'':
             return r'${}$'.format(NAME.decode('utf-8'))
         else:

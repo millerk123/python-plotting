@@ -252,6 +252,7 @@ class Plot:
         total_num = (np.array(nend) - np.array(nstart)) / np.array(ndump)
         if 'cpu_count' in self.general_dict.keys():
             cpu_count = self.general_dict['cpu_count']
+            print('Using only {} cores'.format(cpu_count))
         Parallel(n_jobs=cpu_count)(delayed(visualize)(self, nn, dla_stuff) for nn in range( int(np.min(total_num) + 1) ))
         # [visualize(self, nn, dla_stuff) for nn in range( int(np.min(total_num) + 1) )]
 

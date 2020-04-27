@@ -193,6 +193,7 @@ class Plot:
             self.subplots.append(Subplot(text, num, self.general_dict))
 
     def read_general_parameters(self, text, ind):
+        global cpu_count
         # string = text.lower()
         string = self.find_section(text, ind, self.flag)
         self.read_lines(string)
@@ -200,6 +201,15 @@ class Plot:
         # set dla_tracks to false if not present
         if ('dla_tracks' not in list(self.general_dict.keys())):
             self.general_dict['dla_tracks'] = False
+
+        # set cpu_count if included
+        if 'cpu_count' in self.general_dict.keys():
+            cpu_count_in = self.general_dict['cpu_count'][0]
+            if cpu_count_in < cpu_count:
+                cpu_count = cpu_count_in
+                print('Using only {} cores'.format(cpu_count))
+            elif cpu_count_in > cpu_count:
+                print('{} cores requested, only using the {} cores available'.format(cpu_count_in,cpu_count))
 
     def find_section(self, text, ind, keyword):
         lines = text.splitlines()
@@ -248,11 +258,9 @@ class Plot:
         return out
 
     def parallel_visualize(self, dla_stuff):
+        global cpu_count
         nstart, ndump, nend = self.general_dict['nstart'], self.general_dict['ndump'], self.general_dict['nend']
         total_num = (np.array(nend) - np.array(nstart)) / np.array(ndump)
-        if 'cpu_count' in self.general_dict.keys():
-            cpu_count = self.general_dict['cpu_count']
-            print('Using only {} cores'.format(cpu_count))
         Parallel(n_jobs=cpu_count)(delayed(visualize)(self, nn, dla_stuff) for nn in range( int(np.min(total_num) + 1) ))
         # [visualize(self, nn, dla_stuff) for nn in range( int(np.min(total_num) + 1) )]
 
@@ -328,6 +336,7 @@ class Subplot(Plot):
             return self.params['nstart'][last_ind], self.params['ndump'][last_ind], self.params['nend'][last_ind]
 
     def set_limits(self):
+        global cpu_count
         folders = self.general_dict['folders']
         subplot_keys = list(self.general_dict.keys())
         minimum, maximum = None, None

@@ -48,6 +48,10 @@ def analysis(data, ops_list, axes1=None, axes2=None):
         elif op == 'ifft':
             ax = op.keywords.get('axes', None)
             data = np.fft.ifftshift(np.fft.ifftn(np.fft.fftshift(data, axes=ax), **op.keywords), axes=ax)
+        elif op == 'im' or op == 'imag' or op == 'imaginary':
+            data = np.imag(data)
+        elif op == 're' or op == 'real':
+            data = np.real(data)
         elif op == 'transpose':
             data = np.transpose(data)
         elif op == 'reflect':

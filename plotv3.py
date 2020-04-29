@@ -274,7 +274,7 @@ class Subplot(Plot):
                       'colormap': str, 'midpoint': float, 'legend': str, 'markers': str, \
                       'x1_lims': float, 'x2_lims': float, 'x3_lims': float, 'norm': str, 'side': str, 'bounds': str, \
                       'use_dir': str, 'linewidth': float, 'operation': str2keywords, 'transpose': bool, \
-                      'x_label': str, 'y_label': str, 'dla_tracks': bool }
+                      'x_label': str, 'y_label': str, 'dla_tracks': bool, 'cyl_modes':bool }
         self.left = 0
         self.right = 0
         self.general_dict = {}
@@ -434,7 +434,10 @@ class Subplot(Plot):
                             # dla_data, cumsum, dla_time = dla_stuff
                             if (file.attrs['TIME'][0] >= dla_stuff[2][0]):
                                 ind=np.argmin(np.abs(dla_stuff[2]-file.attrs['TIME'][0]))
-                                axd2=plt.scatter(dla_stuff[0][:,1,ind],dla_stuff[0][:,2,ind],s=8,c=dla_stuff[1][:,1,ind]-dla_stuff[1][:,0,ind],cmap='PiYG',norm=MidpointNormalize(midpoint=0))
+                                if (self.general_dict['cyl_modes']):
+                                    axd2=plt.scatter(dla_stuff[0][:,1,ind],np.sqrt(np.sum(np.square(dla_stuff[0][:,2:4,ind]),axis=1)),s=4,c=dla_stuff[1][:,1,ind]-dla_stuff[1][:,0,ind],cmap='PiYG',norm=MidpointNormalize(midpoint=0))
+                                else:
+                                    axd2=plt.scatter(dla_stuff[0][:,1,ind],dla_stuff[0][:,2,ind],s=4,c=dla_stuff[1][:,1,ind]-dla_stuff[1][:,0,ind],cmap='PiYG',norm=MidpointNormalize(midpoint=0))
 
                                 divider = make_axes_locatable(plt.gca())
                                 cax2 = divider.new_horizontal(size="5%", pad=0.7, pack_start=True)

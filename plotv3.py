@@ -11,6 +11,7 @@ from h5_utilities import *
 from analysis import analysis, reflect
 import re
 from str2keywords import str2keywords
+import gc
 # global parameters
 
 
@@ -18,6 +19,7 @@ section_start, section_end, = '{', '}'
 ignore_flag, empty, eq_flag, tokenize_flag = '!', '', '=', ','
 general_flag, subplot_flag = 'simulation', 'data'
 cpu_count = multiprocessing.cpu_count()
+times = np.array([])
 # match commas not inside single or double quotes
 option_pattern = re.compile(''',(?=(?:(?:[^"']*"[^"']*")|(?:[^'"]*'[^'"]*'))*[^"']*$)''')
 delta = 0.01
@@ -95,8 +97,12 @@ def main():
 
     # read in dla_tracks if desired
     dla_stuff = read_dla_tracks(plots)
+    gc.collect()
 
     plots.parallel_visualize(dla_stuff)
+
+    del(dla_stuff)
+    gc.collect()
 
     if (dirs[len(dirs) - 1] != '/'):
         dirs = dirs + '/'
@@ -121,9 +127,10 @@ def get_bounds(self, file_name, num, file_num):
     if ('operation' in list(self.general_dict.keys())):
         data = analysis(data, self.general_dict.get('operation'))
     minimum, maximum = np.min(data), np.max(data)
+    time = file.attrs['TIME'][0]
     file.close()
     del data
-    return minimum, maximum
+    return minimum, maximum, time
 
 
 def fmt(x, pos):
@@ -141,24 +148,31 @@ def fmt(x, pos):
 
 
 def read_dla_tracks(plots):
+    global times
     if (plots.general_dict['dla_tracks']):
         sim_dir = plots.general_dict['sim_dir'][0]
         if (len(sim_dir) > 0 and sim_dir[len(sim_dir) - 1] != '/'):
-            dla_data = np.load(sim_dir+'/dat.npy')
-            cumsum = np.load(sim_dir+'/cumsum.npy')
-            dla_time = np.load(sim_dir+'/time.npy')
+            pref='/'
         else:
-            dla_data = np.load(sim_dir+'dat.npy')
-            cumsum = np.load(sim_dir+'cumsum.npy')
-            dla_time = np.load(sim_dir+'time.npy')
+            pref=''
+        dla_time = np.load(sim_dir+pref+'time'+plots.general_dict['dla_suffix'][0]+'.npy')
+        # We only care about the needed times that are after tracking data starts
+        times = times[ np.argmax(times>dla_time[0]): ]
+        # Resize arrays for comparison
+        dla_time_tile = np.tile( dla_time, (times.size,1) )
+        times_tile = np.tile( times, (dla_time.size,1) ).T
+        # Find the correct indices for the times we want
+        inds = np.argmin( np.abs( dla_time_tile - times_tile ), axis=1 )
+        # Only keep dla tracking data for the required indices
+        dla_time = dla_time[inds]
+        dla_data = np.load(sim_dir+pref+'dat'+plots.general_dict['dla_suffix'][0]+'.npy')[:,1:4,inds]
+        cumsum = np.load(sim_dir+pref+'cumsum'+plots.general_dict['dla_suffix'][0]+'.npy')[:,:-1,inds]
         return (dla_data,cumsum,dla_time)
     else:
         return None
 
 
 def visualize(plot, indices, dla_stuff):
-    plt.register_cmap(name='BlueRed', data=cdict_BR)
-    plt.register_cmap(name='Jet', data=cdict_Jet)
     subplots = plot.subplots
     title = ''
     for num in range(len(subplots)):
@@ -180,7 +194,7 @@ class Plot:
         # if you want extra parameters at start modify self.types
         self.types = {'subplots': int, 'nstart': int, 'nend': int, 'ndump': int, \
                       'dpi': int, 'fig_size': float, 'fig_layout': int, 'fontsize': int, 'save_dir': str,
-                      'sim_dir': str, 'dla_tracks': bool, 'cpu_count': int}
+                      'sim_dir': str, 'dla_tracks': bool, 'dla_suffix': str, 'cpu_count': int}
         # size in inches, dpi for image quality, configuration for plot layouts
 
 
@@ -201,6 +215,9 @@ class Plot:
         # set dla_tracks to false if not present
         if ('dla_tracks' not in list(self.general_dict.keys())):
             self.general_dict['dla_tracks'] = False
+        # set dla_suffix to empty string if not present
+        if ('dla_suffix' not in list(self.general_dict.keys())):
+            self.general_dict['dla_suffix'] = ''
 
         # set cpu_count if included
         if 'cpu_count' in self.general_dict.keys():
@@ -259,6 +276,8 @@ class Plot:
 
     def parallel_visualize(self, dla_stuff):
         global cpu_count
+        plt.register_cmap(name='BlueRed', data=cdict_BR)
+        plt.register_cmap(name='Jet', data=cdict_Jet)
         nstart, ndump, nend = self.general_dict['nstart'], self.general_dict['ndump'], self.general_dict['nend']
         total_num = (np.array(nend) - np.array(nstart)) / np.array(ndump)
         Parallel(n_jobs=cpu_count)(delayed(visualize)(self, nn, dla_stuff) for nn in range( int(np.min(total_num) + 1) ))
@@ -274,7 +293,7 @@ class Subplot(Plot):
                       'colormap': str, 'midpoint': float, 'legend': str, 'markers': str, \
                       'x1_lims': float, 'x2_lims': float, 'x3_lims': float, 'norm': str, 'side': str, 'bounds': str, \
                       'use_dir': str, 'linewidth': float, 'operation': str2keywords, 'transpose': bool, \
-                      'x_label': str, 'y_label': str, 'dla_tracks': bool, 'cyl_modes':bool }
+                      'x_label': str, 'y_label': str, 'dla_tracks': str }
         self.left = 0
         self.right = 0
         self.general_dict = {}
@@ -336,11 +355,15 @@ class Subplot(Plot):
             return self.params['nstart'][last_ind], self.params['ndump'][last_ind], self.params['nend'][last_ind]
 
     def set_limits(self):
-        global cpu_count
+        global cpu_count, times
         folders = self.general_dict['folders']
         subplot_keys = list(self.general_dict.keys())
         minimum, maximum = None, None
         min_max_pairs = []
+        if times.size==0:
+            # Only works when reading from one folder at a time
+            nstart, ndump, nend = self.get_nfac(0)
+            times = np.zeros(len(np.arange(nstart, nend + 1, ndump)))
 
         for index in range(len(folders)):
             if (self.get_indices(0)[0]=='slice_contour' and index>0):
@@ -350,8 +373,8 @@ class Subplot(Plot):
             out = Parallel(n_jobs=cpu_count)(
                 delayed(get_bounds)(self, self.file_names[index], nn, index) for nn in range(nstart, nend + 1, ndump))
             # out = [get_bounds(self, self.file_names[index], nn, index) for nn in range(nstart, nend + 1, ndump)]
-            print(out)
-            for mn, mx in out:
+            print([i[0:2] for i in out])
+            for i, (mn, mx, time) in enumerate(out):
                 if (maximum == None):
                     maximum = mx
                 else:
@@ -362,6 +385,7 @@ class Subplot(Plot):
                 else:
                     if (mn < minimum):
                         minimum = mn
+                times[i] = time
             min_max_pairs.append((minimum, maximum))
             maximum, minimum = None, None
         mins, maxs = [np.inf, np.inf], [-np.inf, -np.inf]
@@ -430,21 +454,63 @@ class Subplot(Plot):
 
                     if (plot_type == 'slice'):
                         self.plot_grid(file, file_num, ax, fig)
-                        if (self.general_dict['dla_tracks']):
+                        if ('dla_tracks' in list(self.general_dict.keys())):
                             # dla_data, cumsum, dla_time = dla_stuff
                             if (file.attrs['TIME'][0] >= dla_stuff[2][0]):
                                 ind=np.argmin(np.abs(dla_stuff[2]-file.attrs['TIME'][0]))
-                                if (self.general_dict['cyl_modes']):
-                                    axd2=plt.scatter(dla_stuff[0][:,1,ind],np.sqrt(np.sum(np.square(dla_stuff[0][:,2:4,ind]),axis=1)),s=4,c=dla_stuff[1][:,1,ind]-dla_stuff[1][:,0,ind],cmap='PiYG',norm=MidpointNormalize(midpoint=0))
+                                clbl = '$W_{DLA}-W_{LWFA}$ [MeV]'
+
+                                if self.general_dict['dla_tracks'][0] == 'old':
+                                    # Use old method, where cumsum was just [wake, dla, total]
+                                    c_dat = dla_stuff[1][:,1,ind] - dla_stuff[1][:,0,ind]
+                                    y_dat = dla_stuff[0][:,1,ind]
+
+                                elif self.general_dict['dla_tracks'][0] == 'total':
+                                    # Use current method for 2D/3D, where cumsum is [wake, dla2, dla3, total]
+                                    c_dat = np.sum(dla_stuff[1][:,1:3,ind],axis=1) - dla_stuff[1][:,0,ind]
+                                    y_dat = dla_stuff[0][:,1,ind]
+
+                                elif self.general_dict['dla_tracks'][0] == 'transverse':
+                                    # Use current method for q3D transverse, where cumsum is [wake, dla2, dla3, total]
+                                    # Plot component if requested
+                                    if len(self.general_dict['dla_tracks'])==2:
+                                        comp = int(self.general_dict['dla_tracks'][1])
+                                        c_dat = dla_stuff[1][:,comp-1,ind]
+                                        clbl = '$W_{E_'+str(comp)+'}$ [MeV]'
+                                    else:
+                                        c_dat = np.sum(dla_stuff[1][:,1:3,ind],axis=1) - dla_stuff[1][:,0,ind]
+                                    y_dat = np.sqrt(np.sum(np.square(dla_stuff[0][:,1:3,ind]),axis=1))
+
+                                elif self.general_dict['dla_tracks'][0] == 'modal':
+                                    # Use q3D modal, where cumsum is [wake1, wake2, wake3, dla1, dla2, dla3, total]
+                                    # Plot component if requested
+                                    if len(self.general_dict['dla_tracks'])==2:
+                                        comp = int(self.general_dict['dla_tracks'][1])
+                                        c_dat = dla_stuff[1][:,comp-1,ind]
+                                        clbl = '$W_{E_'+str((comp-1)%3+1)+',m='+str((comp-1)//3)+'}$ [MeV]'
+                                    else:
+                                        c_dat = np.sum(dla_stuff[1][:,3:6,ind],axis=1) - np.sum(dla_stuff[1][:,0:3,ind],axis=1)
+                                    y_dat = np.sqrt(np.sum(np.square(dla_stuff[0][:,1:3,ind]),axis=1))
+
                                 else:
-                                    axd2=plt.scatter(dla_stuff[0][:,1,ind],dla_stuff[0][:,2,ind],s=4,c=dla_stuff[1][:,1,ind]-dla_stuff[1][:,0,ind],cmap='PiYG',norm=MidpointNormalize(midpoint=0))
+                                    try:
+                                        comp = int(self.general_dict['dla_tracks'])
+                                        c_dat = dla_stuff[1][:,comp-1,ind]
+                                        y_dat = dla_stuff[0][:,1,ind]
+                                        clbl = '$W_{E_'+str(comp)+'}$ [MeV]'
+                                    except:
+                                        print("Invalid value for 'dla_tracks'")
+                                        print("Valid values are 'old', 'total', 'transverse', 'modal', or an integer")
+                                        sys.exit("Exiting program")
+
+                                axd2=plt.scatter(dla_stuff[0][:,0,ind],y_dat,s=4,c=c_dat,cmap='PiYG',norm=MidpointNormalize(midpoint=0))
 
                                 divider = make_axes_locatable(plt.gca())
                                 cax2 = divider.new_horizontal(size="5%", pad=0.7, pack_start=True)
                                 fig.add_axes(cax2)
                                 cb2 = fig.colorbar(axd2,cax=cax2)
                                 cb2.ax.yaxis.set_ticks_position('left')
-                                cb2.set_label('$W_{DLA}-W_{LWFA}$ [MeV]')
+                                cb2.set_label(clbl)
                                 cb2.ax.yaxis.set_label_position('left')
                     elif (plot_type == 'raw'):
                         self.plot_raw(file, file_num, ax, fig)

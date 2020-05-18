@@ -149,7 +149,7 @@ def fmt(x, pos):
 
 def read_dla_tracks(plots):
     global times
-    if (plots.general_dict['dla_tracks']):
+    if (plots.general_dict['dla']):
         sim_dir = plots.general_dict['sim_dir'][0]
         if (len(sim_dir) > 0 and sim_dir[len(sim_dir) - 1] != '/'):
             pref='/'
@@ -173,6 +173,8 @@ def read_dla_tracks(plots):
 
 
 def visualize(plot, indices, dla_stuff):
+    plt.register_cmap(name='BlueRed', data=cdict_BR)
+    plt.register_cmap(name='Jet', data=cdict_Jet)
     subplots = plot.subplots
     title = ''
     for num in range(len(subplots)):
@@ -194,7 +196,7 @@ class Plot:
         # if you want extra parameters at start modify self.types
         self.types = {'subplots': int, 'nstart': int, 'nend': int, 'ndump': int, \
                       'dpi': int, 'fig_size': float, 'fig_layout': int, 'fontsize': int, 'save_dir': str,
-                      'sim_dir': str, 'dla_tracks': bool, 'dla_suffix': str, 'cpu_count': int}
+                      'sim_dir': str, 'dla': bool, 'dla_suffix': str, 'cpu_count': int}
         # size in inches, dpi for image quality, configuration for plot layouts
 
 
@@ -212,9 +214,9 @@ class Plot:
         string = self.find_section(text, ind, self.flag)
         self.read_lines(string)
 
-        # set dla_tracks to false if not present
-        if ('dla_tracks' not in list(self.general_dict.keys())):
-            self.general_dict['dla_tracks'] = False
+        # set dla to false if not present
+        if ('dla' not in list(self.general_dict.keys())):
+            self.general_dict['dla'] = False
         # set dla_suffix to empty string if not present
         if ('dla_suffix' not in list(self.general_dict.keys())):
             self.general_dict['dla_suffix'] = ''
@@ -276,8 +278,6 @@ class Plot:
 
     def parallel_visualize(self, dla_stuff):
         global cpu_count
-        plt.register_cmap(name='BlueRed', data=cdict_BR)
-        plt.register_cmap(name='Jet', data=cdict_Jet)
         nstart, ndump, nend = self.general_dict['nstart'], self.general_dict['ndump'], self.general_dict['nend']
         total_num = (np.array(nend) - np.array(nstart)) / np.array(ndump)
         Parallel(n_jobs=cpu_count)(delayed(visualize)(self, nn, dla_stuff) for nn in range( int(np.min(total_num) + 1) ))

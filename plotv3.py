@@ -195,18 +195,19 @@ class Plot:
     def __init__(self, text):
         # if you want extra parameters at start modify self.types
         self.types = {'subplots': int, 'nstart': int, 'nend': int, 'ndump': int, \
-                      'dpi': int, 'fig_size': float, 'fig_layout': int, 'fontsize': int, 'save_dir': str,
-                      'sim_dir': str, 'dla': bool, 'dla_suffix': str, 'cpu_count': int}
+                      'dpi': int, 'fig_size': float, 'fig_layout': int, 'fontsize': int, 'save_dir': str, \
+                      'sim_dir': str, 'dla': bool, 'dla_suffix': str, 'laser_amp': bool, 'cpu_count': int}
         # size in inches, dpi for image quality, configuration for plot layouts
-
+        self.laser_params = {}
 
         self.flag = general_flag
         self.general_keys = list(self.types.keys())
         self.general_dict = {}
         self.subplots = []
         self.read_general_parameters(text, 0)
+        self.prep_laser_amp()
         for num in range(self.general_dict['subplots'][0]):
-            self.subplots.append(Subplot(text, num, self.general_dict))
+            self.subplots.append(Subplot(text, num, self.general_dict, self.laser_params))
 
     def read_general_parameters(self, text, ind):
         global cpu_count
@@ -220,6 +221,9 @@ class Plot:
         # set dla_suffix to empty string if not present
         if ('dla_suffix' not in list(self.general_dict.keys())):
             self.general_dict['dla_suffix'] = ''
+        # set laser_amp to false if not present
+        if ('laser_amp' not in list(self.general_dict.keys())):
+            self.general_dict['laser_amp'] = False
 
         # set cpu_count if included
         if 'cpu_count' in self.general_dict.keys():
@@ -276,6 +280,36 @@ class Plot:
                     out.append(cast_type(ele))
         return out
 
+    def prep_laser_amp(self):
+        # Need to gather the following parameters from the input deck:
+        # lon_rise, lon_flat, lon_fall, lon_start, omega0, per_w0, per_focus, a0, dimension
+        if (self.general_dict['laser_amp']):
+            with open('os-stdin') as osdata:
+                data = osdata.readlines()
+
+            # Read in all parameters that will be used for calculating the laser amplitude
+            for i in range(len(data)):
+                if 'node_number' in data[i]:
+                    self.laser_params['dimension'] = data[i].count(",")
+                if 'lon_rise' in data[i]:
+                    self.laser_params['lon_rise'] = float(data[i].split("=")[-1].split(",")[0])
+                if 'lon_flat' in data[i]:
+                    self.laser_params['lon_flat'] = float(data[i].split("=")[-1].split(",")[0])
+                if 'lon_fall' in data[i]:
+                    self.laser_params['lon_fall'] = float(data[i].split("=")[-1].split(",")[0])
+                if 'lon_start' in data[i]:
+                    self.laser_params['lon_start'] = float(data[i].split("=")[-1].split(",")[0])
+                if 'omega0' in data[i]:
+                    self.laser_params['omega0'] = float(data[i].split("=")[-1].split(",")[0])
+                if 'per_w0' in data[i]:
+                    self.laser_params['per_w0'] = float(data[i].split("=")[-1].split(",")[0])
+                if 'per_focus' in data[i]:
+                    self.laser_params['per_focus'] = float(data[i].split("=")[-1].split(",")[0])
+                if ' a0' in data[i]:
+                    self.laser_params['a0'] = float(data[i].split("=")[-1].split(",")[0])
+                if ' xmax' in data[i]:
+                    self.laser_params['xmax'] = float(data[i].split("=")[-1].split(",")[0])
+
     def parallel_visualize(self, dla_stuff):
         global cpu_count
         nstart, ndump, nend = self.general_dict['nstart'], self.general_dict['ndump'], self.general_dict['nend']
@@ -285,9 +319,10 @@ class Plot:
 
 
 class Subplot(Plot):
-    def __init__(self, text, num, general_params):
+    def __init__(self, text, num, general_params, laser_params):
         # if you want extra parameters in subplots -- modify self.types
         self.params = general_params
+        self.laser_params = laser_params
         self.types = {'folders': str, 'title': str, 'log_threshold': float, \
                       'plot_type': str, 'maximum': float, 'minimum': float, \
                       'colormap': str, 'midpoint': float, 'legend': str, 'markers': str, \
@@ -763,16 +798,7 @@ class Subplot(Plot):
         if ('operation' in list(self.general_dict.keys())):
             for op in self.general_dict['operation']:
                 if op == 'hilbert_env':
-                    file_0 = h5py.File(self.file_names[file_num] + str(int(1000000 + 0))[1:] + '.h5', 'r')
-                    try:
-                        data_0 = self.get_data(file_0, file_num)
-                    except:
-                        data_0 = read_hdf(file_0.filename).data
-                    data_0 = analysis(data_0, self.general_dict['operation'])
-                    label = self.get_name(file_0) + self.append_legend(file_num)
-                    ax.plot(xx, data_0, self.get_marker(file_num), label=label, linewidth=self.get_linewidth(), \
-                        color=l.get_color())
-                    file_0.close()
+                    ax.plot(xx, self.laser_amp(xx), '--', label='vacuum', linewidth=self.get_linewidth() )
 
         ax.set_xlim(self.get_x_lims('x1'))
 
@@ -785,6 +811,33 @@ class Subplot(Plot):
             return self.general_dict['linewidth'][0]
         else:
             return 1
+
+    def laser_amp(self, z):
+
+        def fenv(tt):
+            return 10 * np.power(tt,3) - 15 * np.power(tt,4) + 6 * np.power(tt,5)
+
+        d = self.laser_params
+
+        length = d['lon_rise'] + d['lon_flat'] + d['lon_fall']
+        x = d['lon_start'] + z[-1] - d['xmax'] - z
+        inds = [ x<length, x<d['lon_rise']+d['lon_flat'], x<d['lon_rise'], x<0.0 ]
+
+        # Piecewise function done in reverse order of if else to make the last one true
+        lon_envelope = np.piecewise( x, inds, [ fenv( (length-x[inds[0]])/d['lon_fall'] ), 1.0, 
+                                                fenv(x[inds[2]]/d['lon_rise']), 0.0, 0.0] )
+
+        z0 = d['omega0'] * np.square(d['per_w0']) / 2
+        zf = z - d['per_focus']
+        zero = zf==0
+        rWl2 = np.zeros_like(zf)
+        rWl2[~zero] = np.square(z0) / (np.square(z0) + np.square(zf[~zero]))
+        rWl2[zero] = 1
+
+        if d['dimension']==2:
+            return d['omega0'] * d['a0'] * lon_envelope * np.sqrt( np.sqrt(rWl2) )
+        else:
+            return d['omega0'] * d['a0'] * lon_envelope * np.sqrt(rWl2)
 
     def plot_raw(self, file, file_num, ax, fig):
         indices = self.get_indices(file_num)

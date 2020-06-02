@@ -797,8 +797,8 @@ class Subplot(Plot):
         if ('operation' in list(self.general_dict.keys())):
             for op in self.general_dict['operation']:
                 if op == 'hilbert_env':
-                    if all(k in self.laser_params.keys() for k in {"dimension","lon_rise","lon_flat",
-                                        "lon_fall","lon_start","omega0","per_w0","per_focus","a0","xmax"}):
+                    if all([k in self.laser_params for k in ["dimension","lon_rise","lon_flat",
+                                        "lon_fall","lon_start","omega0","per_w0","per_focus","a0","xmax"]]):
                         ax.plot(xx, self.laser_amp(xx), '--', label='vacuum', linewidth=self.get_linewidth() )
 
         ax.set_xlim(self.get_x_lims('x1'))

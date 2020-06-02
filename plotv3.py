@@ -306,6 +306,8 @@ class Plot:
                     self.laser_params['a0'] = float(data[i].split("=")[-1].split(",")[0])
                 if ' xmax' in data[i]:
                     self.laser_params['xmax'] = float(data[i].split("=")[-1].split(",")[0])
+        except:
+            pass
 
     def parallel_visualize(self, dla_stuff):
         global cpu_count

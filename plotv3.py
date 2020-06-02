@@ -302,10 +302,26 @@ class Plot:
                     self.laser_params['per_w0'] = float(data[i].split("=")[-1].split(",")[0])
                 if 'per_focus' in data[i]:
                     self.laser_params['per_focus'] = float(data[i].split("=")[-1].split(",")[0])
-                if ' a0' in data[i]:
+                if '  a0' in data[i]:
                     self.laser_params['a0'] = float(data[i].split("=")[-1].split(",")[0])
-                if ' xmax' in data[i]:
+                if '  xmax' in data[i]:
                     self.laser_params['xmax'] = float(data[i].split("=")[-1].split(",")[0])
+                if 't_rise' in data[i]:
+                    self.laser_params['t_rise'] = float(data[i].split("=")[-1].split(",")[0])
+                if 't_flat' in data[i]:
+                    self.laser_params['t_flat'] = float(data[i].split("=")[-1].split(",")[0])
+                if 't_fall' in data[i]:
+                    self.laser_params['t_fall'] = float(data[i].split("=")[-1].split(",")[0])
+                if 'delay' in data[i]:
+                    self.laser_params['delay'] = float(data[i].split("=")[-1].split(",")[0])
+                if 'rad_x' in data[i]:
+                    self.laser_params['rad_x'] = float(data[i].split("=")[-1].split(",")[0])
+                if '  focus' in data[i]:
+                    self.laser_params['focus'] = float(data[i].split("=")[-1].split(",")[0])
+
+            if 'delay' not in self.laser_params:
+                self.laser_params['delay'] = 0.0
+
         except:
             pass
 
@@ -797,9 +813,13 @@ class Subplot(Plot):
         if ('operation' in list(self.general_dict.keys())):
             for op in self.general_dict['operation']:
                 if op == 'hilbert_env':
-                    if all([k in self.laser_params for k in ["dimension","lon_rise","lon_flat",
-                                        "lon_fall","lon_start","omega0","per_w0","per_focus","a0","xmax"]]):
-                        ax.plot(xx, self.laser_amp(xx), '--', label='vacuum', linewidth=self.get_linewidth() )
+                    zpulse_keys = ["lon_rise","lon_flat","lon_fall","lon_start","per_w0","per_focus"]
+                    antenna_keys = ["t_rise","t_flat","t_fall","delay","rad_x","focus"]
+                    if all([k in self.laser_params for k in zpulse_keys]) or \
+                       all([k in self.laser_params for k in antenna_keys]):
+                       lsr_amp = self.laser_amp(xx,file.attrs['TIME'][0])
+                       ax.plot(xx, lsr_amp, '--', label='vacuum', linewidth=self.get_linewidth() )
+                       plt.ylim(top=np.max([maximum,lsr_amp.max()]))
 
         ax.set_xlim(self.get_x_lims('x1'))
 
@@ -813,32 +833,55 @@ class Subplot(Plot):
         else:
             return 1
 
-    def laser_amp(self, z):
+    def laser_amp(self, z, t):
 
         def fenv(tt):
             return 10 * np.power(tt,3) - 15 * np.power(tt,4) + 6 * np.power(tt,5)
 
         d = self.laser_params
 
-        length = d['lon_rise'] + d['lon_flat'] + d['lon_fall']
-        x = d['lon_start'] + z[-1] - d['xmax'] - z
-        inds = [ x<length, x<d['lon_rise']+d['lon_flat'], x<d['lon_rise'], x<0.0 ]
+        if 'lon_rise' in d:
+            # Calculate fields based on zpulse
+            length = d['lon_rise'] + d['lon_flat'] + d['lon_fall']
+            x = d['lon_start'] + z[-1] - d['xmax'] - z
+            inds = [ x<length, x<d['lon_rise']+d['lon_flat'], x<d['lon_rise'], x<0.0 ]
 
-        # Piecewise function done in reverse order of if else to make the last one true
-        lon_envelope = np.piecewise( x, inds, [ fenv( (length-x[inds[0]])/d['lon_fall'] ), 1.0, 
-                                                fenv(x[inds[2]]/d['lon_rise']), 0.0, 0.0] )
+            # Piecewise function done in reverse order of if else to make the last one true
+            lon_envelope = np.piecewise( x, inds, [ fenv( (length-x[inds[0]])/d['lon_fall'] ), 1.0, 
+                                                    fenv(x[inds[2]]/d['lon_rise']), 0.0, 0.0] )
 
-        z0 = d['omega0'] * np.square(d['per_w0']) / 2
-        zf = z - d['per_focus']
-        zero = zf==0
-        rWl2 = np.zeros_like(zf)
-        rWl2[~zero] = np.square(z0) / (np.square(z0) + np.square(zf[~zero]))
-        rWl2[zero] = 1
+            z0 = d['omega0'] * np.square(d['per_w0']) / 2
+            zf = z - d['per_focus']
+            zero = zf==0
+            rWl2 = np.zeros_like(zf)
+            rWl2[~zero] = np.square(z0) / (np.square(z0) + np.square(zf[~zero]))
+            rWl2[zero] = 1
 
-        if d['dimension']==2:
-            return d['omega0'] * d['a0'] * lon_envelope * np.sqrt( np.sqrt(rWl2) )
-        else:
-            return d['omega0'] * d['a0'] * lon_envelope * np.sqrt(rWl2)
+            if d['dimension']==2:
+                return d['omega0'] * d['a0'] * lon_envelope * np.sqrt( np.sqrt(rWl2) )
+            else:
+                return d['omega0'] * d['a0'] * lon_envelope * np.sqrt(rWl2)
+        elif 't_rise' in d:
+            # Calculate fields based on antenna
+            length = d['t_rise'] + d['t_flat'] + d['t_fall']
+            x = t - d['delay'] - z
+            inds = [ x<length, x<d['t_rise']+d['t_flat'], x<d['t_rise'], x<0.0 ]
+
+            # Piecewise function done in reverse order of if else to make the last one true
+            lon_envelope = np.piecewise( x, inds, [ fenv( (length-x[inds[0]])/d['t_fall'] ), 1.0, 
+                                                    fenv(x[inds[2]]/d['t_rise']), 0.0, 0.0] )
+
+            z0 = d['omega0'] * np.square(d['rad_x']) / 2
+            zf = z - (d['focus']+z[0])
+            zero = zf==0
+            rWl2 = np.zeros_like(zf)
+            rWl2[~zero] = np.square(z0) / (np.square(z0) + np.square(zf[~zero]))
+            rWl2[zero] = 1
+
+            if d['dimension']==2:
+                return d['omega0'] * d['a0'] * lon_envelope * np.sqrt( np.sqrt(rWl2) )
+            else:
+                return d['omega0'] * d['a0'] * lon_envelope * np.sqrt(rWl2)
 
     def plot_raw(self, file, file_num, ax, fig):
         indices = self.get_indices(file_num)

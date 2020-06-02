@@ -196,7 +196,7 @@ class Plot:
         # if you want extra parameters at start modify self.types
         self.types = {'subplots': int, 'nstart': int, 'nend': int, 'ndump': int, \
                       'dpi': int, 'fig_size': float, 'fig_layout': int, 'fontsize': int, 'save_dir': str, \
-                      'sim_dir': str, 'dla': bool, 'dla_suffix': str, 'laser_amp': bool, 'cpu_count': int}
+                      'sim_dir': str, 'dla': bool, 'dla_suffix': str, 'cpu_count': int}
         # size in inches, dpi for image quality, configuration for plot layouts
         self.laser_params = {}
 
@@ -221,9 +221,6 @@ class Plot:
         # set dla_suffix to empty string if not present
         if ('dla_suffix' not in list(self.general_dict.keys())):
             self.general_dict['dla_suffix'] = ''
-        # set laser_amp to false if not present
-        if ('laser_amp' not in list(self.general_dict.keys())):
-            self.general_dict['laser_amp'] = False
 
         # set cpu_count if included
         if 'cpu_count' in self.general_dict.keys():
@@ -281,9 +278,9 @@ class Plot:
         return out
 
     def prep_laser_amp(self):
-        # Need to gather the following parameters from the input deck:
+        # Try gathering the following parameters from the input deck:
         # lon_rise, lon_flat, lon_fall, lon_start, omega0, per_w0, per_focus, a0, dimension
-        if (self.general_dict['laser_amp']):
+        try:
             with open('os-stdin') as osdata:
                 data = osdata.readlines()
 
@@ -818,6 +815,12 @@ class Subplot(Plot):
             return 10 * np.power(tt,3) - 15 * np.power(tt,4) + 6 * np.power(tt,5)
 
         d = self.laser_params
+        if not all(k in d.keys() for k in {"dimension","lon_rise","lon_flat","lon_fall",
+                                        "lon_start","omega0","per_w0","per_focus","a0","xmax"}):
+            print("Laser parameters were not successfully read in from input deck.")
+            print("This fuction expects an input deck named os-stdin with the following parameters:")
+            print("dimension, lon_rise, lon_flat, lon_fall, lon_start, omega0,")
+            print("per_w0, per_focus, a0, xmax")
 
         length = d['lon_rise'] + d['lon_flat'] + d['lon_fall']
         x = d['lon_start'] + z[-1] - d['xmax'] - z

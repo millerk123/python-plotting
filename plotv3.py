@@ -795,7 +795,9 @@ class Subplot(Plot):
         if ('operation' in list(self.general_dict.keys())):
             for op in self.general_dict['operation']:
                 if op == 'hilbert_env':
-                    ax.plot(xx, self.laser_amp(xx), '--', label='vacuum', linewidth=self.get_linewidth() )
+                    if all(k in d.keys() for k in {"dimension","lon_rise","lon_flat","lon_fall",
+                                        "lon_start","omega0","per_w0","per_focus","a0","xmax"}):
+                        ax.plot(xx, self.laser_amp(xx), '--', label='vacuum', linewidth=self.get_linewidth() )
 
         ax.set_xlim(self.get_x_lims('x1'))
 
@@ -815,12 +817,6 @@ class Subplot(Plot):
             return 10 * np.power(tt,3) - 15 * np.power(tt,4) + 6 * np.power(tt,5)
 
         d = self.laser_params
-        if not all(k in d.keys() for k in {"dimension","lon_rise","lon_flat","lon_fall",
-                                        "lon_start","omega0","per_w0","per_focus","a0","xmax"}):
-            print("Laser parameters were not successfully read in from input deck.")
-            print("This fuction expects an input deck named os-stdin with the following parameters:")
-            print("dimension, lon_rise, lon_flat, lon_fall, lon_start, omega0,")
-            print("per_w0, per_focus, a0, xmax")
 
         length = d['lon_rise'] + d['lon_flat'] + d['lon_fall']
         x = d['lon_start'] + z[-1] - d['xmax'] - z

@@ -284,10 +284,17 @@ class Plot:
             with open('os-stdin') as osdata:
                 data = osdata.readlines()
 
+            q3d = False
+
             # Read in all parameters that will be used for calculating the laser amplitude
             for i in range(len(data)):
+                if 'quasi-3D' in data[i]:
+                    q3d = True
                 if 'node_number' in data[i]:
-                    self.laser_params['dimension'] = data[i].count(",")
+                    if q3d:
+                        self.laser_params['dimension'] = 3
+                    else:
+                        self.laser_params['dimension'] = data[i].count(",")
                 if 'lon_rise' in data[i]:
                     self.laser_params['lon_rise'] = float(data[i].split("=")[-1].split(",")[0])
                 if 'lon_flat' in data[i]:

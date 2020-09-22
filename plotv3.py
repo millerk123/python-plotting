@@ -686,13 +686,19 @@ class Subplot(Plot):
 
             if (selectors == None):
                 self.general_dict['axes'].extend(axis_labels)
-                data = (file[file.attrs['NAME'][0]][:])
+                try:
+                    data = (file[file.attrs['NAME'][0]][:])
+                except:
+                    data = (file[list(file)[-1]][:])
                 return data
 
         if (plot_type == 'slice' or plot_type == 'slice_contour'):
             axis_labels.remove(selectors[0])
             self.general_dict['axes'].extend(axis_labels)
-            data = (file[file.attrs['NAME'][0]][:])
+            try:
+                data = (file[file.attrs['NAME'][0]][:])
+            except:
+                data = (file[list(file)[-1]][:])
             if (selectors[0] == 'x1'):
                 return data[:, :, int(selectors[1])]
             elif (selectors[0] == 'x2'):
@@ -702,7 +708,10 @@ class Subplot(Plot):
 
         if (plot_type == 'lineout'):
             self.general_dict['axes'].append(selectors[0])
-            data = (file[file.attrs['NAME'][0]][:])
+            try:
+                data = (file[file.attrs['NAME'][0]][:])
+            except:
+                data = (file[list(file)[-1]][:])
             if (len(selectors) == 3):
                 x2_ind, x3_ind = int(selectors[1]), int(selectors[2])
                 if (selectors[0] == 'x1'):
@@ -935,7 +944,7 @@ class Subplot(Plot):
             threshold = self.general_dict['log_threshold'][file_num]
             imAx = ax.imshow(data, aspect='auto', origin='lower', \
                              interpolation='bilinear', vmin=new_min, vmax=new_max, \
-                             norm=matplotlib.colors.SymLogNorm(threshold), extent=grid_bounds,
+                             norm=matplotlib.colors.SymLogNorm(threshold,base=10), extent=grid_bounds,
                              cmap=self.get_colormap(file_num))
         else:
             imAx = ax.imshow(data, aspect='auto', origin='lower', \

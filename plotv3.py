@@ -377,7 +377,7 @@ class Subplot(Plot):
 
     def get_file_names(self):
         folders = self.general_dict['folders']
-        if ('fnames' in list(self.params.keys())):
+        if ('fnames' in list(self.general_dict.keys())):
             fnames = self.general_dict['fnames']
         else:
             fnames = ["" for x in range(len(folders))]

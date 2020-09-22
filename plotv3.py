@@ -311,8 +311,6 @@ class Plot:
                     self.laser_params['per_focus'] = float(data[i].split("=")[-1].split(",")[0])
                 if '  a0' in data[i]:
                     self.laser_params['a0'] = float(data[i].split("=")[-1].split(",")[0])
-                if '  xmax' in data[i]:
-                    self.laser_params['xmax'] = float(data[i].split("=")[-1].split(",")[0])
                 if 't_rise' in data[i]:
                     self.laser_params['t_rise'] = float(data[i].split("=")[-1].split(",")[0])
                 if 't_flat' in data[i]:
@@ -850,7 +848,7 @@ class Subplot(Plot):
         if 'lon_rise' in d:
             # Calculate fields based on zpulse
             length = d['lon_rise'] + d['lon_flat'] + d['lon_fall']
-            x = d['lon_start'] + z[-1] - d['xmax'] - z
+            x = d['lon_start'] + t - z
             inds = [ x<length, x<d['lon_rise']+d['lon_flat'], x<d['lon_rise'], x<0.0 ]
 
             # Piecewise function done in reverse order of if else to make the last one true

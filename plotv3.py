@@ -944,7 +944,7 @@ class Subplot(Plot):
             threshold = self.general_dict['log_threshold'][file_num]
             imAx = ax.imshow(data, aspect='auto', origin='lower', \
                              interpolation='bilinear', vmin=new_min, vmax=new_max, \
-                             norm=matplotlib.colors.SymLogNorm(threshold,base=10), extent=grid_bounds,
+                             norm=matplotlib.colors.SymLogNorm(threshold), extent=grid_bounds,
                              cmap=self.get_colormap(file_num))
         else:
             imAx = ax.imshow(data, aspect='auto', origin='lower', \

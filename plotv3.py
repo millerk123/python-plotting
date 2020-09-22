@@ -343,7 +343,7 @@ class Subplot(Plot):
         # if you want extra parameters in subplots -- modify self.types
         self.params = general_params
         self.laser_params = laser_params
-        self.types = {'folders': str, 'title': str, 'log_threshold': float, \
+        self.types = {'folders': str, 'fnames': str, 'title': str, 'log_threshold': float, \
                       'plot_type': str, 'maximum': float, 'minimum': float, \
                       'colormap': str, 'midpoint': float, 'legend': str, 'markers': str, \
                       'x1_lims': float, 'x2_lims': float, 'x3_lims': float, 'norm': str, 'side': str, 'bounds': str, \
@@ -377,6 +377,10 @@ class Subplot(Plot):
 
     def get_file_names(self):
         folders = self.general_dict['folders']
+        if ('fnames' in list(self.params.keys())):
+            fnames = self.general_dict['fnames']
+        else:
+            fnames = ["" for x in range(len(folders))]
         for index in range(len(folders)):
             folder = folders[index]
             if ('use_dir' not in list(self.general_dict.keys()) or (
@@ -395,9 +399,9 @@ class Subplot(Plot):
                         folder = sim_dir + folder
             print(folder)
             if (folder[len(folder) - 1] == '/'):
-                new2 = glob.iglob(folder + '*.h5')
+                new2 = glob.iglob(folder + '*' + fnames[index] + '*.h5')
             else:
-                new2 = glob.iglob(folder + '/*.h5')
+                new2 = glob.iglob(folder + '/*' + fnames[index] + '*.h5')
             first = next(new2)
             first = first[:len(first) - 9]  # removes 000000.h5
             self.file_names.append(first)

@@ -1037,7 +1037,18 @@ class Subplot(Plot):
             try:
                 data = file[file.attrs['NAME'][0]]
             except:
-                return '[a.u.]'
+                try:
+                    data = file[list(file)[-1]]
+                    try:
+                        UNITS = data.attrs['UNITS'][0]
+                    except:
+                        try:
+                            UNITS = file.attrs['UNITS'][0]
+                        except:
+                            return '[a.u.]'
+                    return r'$[{}]$'.format(UNITS.decode('utf-8'))
+                except:
+                    return '[a.u.]'
         else:
             data = file[keyword]
         try:
@@ -1049,7 +1060,10 @@ class Subplot(Plot):
     def get_name(self, file, keyword=None):
         ## assuming osiris notation
         if (keyword == None):
-            return r'${}$'.format(file.attrs['NAME'][0].decode('utf-8'))
+            if file.attrs['NAME'][0].decode('utf-8')=="":
+                return r'${}$'.format(file.attrs['LABEL'][0].decode('utf-8'))
+            else:
+                return r'${}$'.format(file.attrs['NAME'][0].decode('utf-8'))
         else:
             try:
                 NAME = file[keyword].attrs['LONG_NAME'][0]

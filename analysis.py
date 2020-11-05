@@ -29,7 +29,8 @@ def analysis(data, ops_list, axes1=None, axes2=None):
         elif op == 'sqrt':
             data = np.sqrt(data)
         elif op == 'hilbert_env':
-            data = np.abs(hilbert(data))
+            ax = op.keywords.get('axes', -1)
+            data = np.abs(hilbert(data, axis=ax))
         elif op == 'fft':
             ax = op.keywords.get('axes', None)
             data = np.fft.fftshift(np.fft.fftn(np.fft.ifftshift(data, axes=ax), **op.keywords), axes=ax)

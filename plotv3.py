@@ -618,11 +618,15 @@ class Subplot(Plot):
         if (ticks == None):
             cb = fig.colorbar(imAx, pad=0.075)
             cb.set_label(label, fontsize=self.fontsize())
+            cb.ax.tick_params(labelsize=self.fontsize())
             cb.formatter.set_powerlimits((0, 0))
+            cb.ax.yaxis.offsetText.set(size=self.fontsize())
+            # cb.locator = mpl.ticker.MaxNLocator(nbins=5)
             cb.update_ticks()
         else:
             cb = fig.colorbar(imAx, pad=0.075, ticks=ticks, format=ticker.FuncFormatter(fmt))
             cb.set_label(label, fontsize=self.fontsize())
+            cb.ax.tick_params(labelsize=self.fontsize())
 
 
 
@@ -1024,6 +1028,7 @@ class Subplot(Plot):
             ax.set_xlabel(self.general_dict['x_label'][0], fontsize=self.fontsize())
         if ('y_label' in list(self.general_dict.keys())):
             ax.set_ylabel(self.general_dict['y_label'][0], fontsize=self.fontsize())
+        ax.tick_params(labelsize=self.fontsize())
 
     def get_marker(self, file_num):
         if ('markers' in list(self.general_dict.keys()) and file_num < len(self.general_dict['markers'])):

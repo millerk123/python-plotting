@@ -196,7 +196,7 @@ class Plot:
         # if you want extra parameters at start modify self.types
         self.types = {'subplots': int, 'nstart': int, 'nend': int, 'ndump': int, \
                       'dpi': int, 'fig_size': float, 'fig_layout': int, 'fontsize': int, 'save_dir': str, \
-                      'sim_dir': str, 'dla': bool, 'dla_suffix': str, 'cpu_count': int}
+                      'sim_dir': str, 'dla': bool, 'dla_suffix': str, 'cpu_count': int, 't_dec': int}
         # size in inches, dpi for image quality, configuration for plot layouts
         self.laser_params = {}
 
@@ -582,13 +582,23 @@ class Subplot(Plot):
                             nn = ndump * n_ind + nstart
                             file2 = h5py.File(self.file_names[file_num+1] + str(int(1000000 + nn))[1:] + '.h5', 'r')
                             self.plot_contour(file, file2, file_num, ax, fig)
-                            time = time + str(file.attrs['TIME'][0])
+                            if 't_dec' in list(self.params.keys()):
+                                time_str = file.attrs['TIME'][0]
+                                sig_figs = self.params['t_dec'][0]
+                                time = time + f'{time_str:.{sig_figs}f}'
+                            else:
+                                time = time + str(file.attrs['TIME'][0])
                             file.close()
                             file2.close()
                             break
 
                     plot_prev = plot_type
-                    time = time + str(file.attrs['TIME'][0])
+                    if 't_dec' in list(self.params.keys()):
+                        time_str = file.attrs['TIME'][0]
+                        sig_figs = self.params['t_dec'][0]
+                        time = time + f'{time_str:.{sig_figs}f}'
+                    else:
+                        time = time + str(file.attrs['TIME'][0])
                     if (file_num < len(self.file_names) - 1):
                         time = time + ','
                     file.close()
@@ -602,10 +612,11 @@ class Subplot(Plot):
         select = {'left': self.left, 'right': self.right}
         num_on_axis = select[key]
         if (num_on_axis > 1):
-            if (key == 'right'):
-                ax.legend(loc=1)
-            else:
-                ax.legend(loc=2)
+            ax.legend()
+            # if (key == 'right'):
+            #     ax.legend(loc=1)
+            # else:
+            #     ax.legend(loc=2)
 
     def add_colorbar(self, imAx, label, ticks, ax, fig):
         plt.minorticks_on()

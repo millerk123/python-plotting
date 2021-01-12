@@ -118,7 +118,7 @@ def main():
 
 
 def get_bounds(self, file_name, num, file_num):
-    file_name = file_name + str(str(1000000 + num)[1:]) + '.h5'
+    file_name = file_name + f'{num:0{self.sig_0}d}.h5'
     try:
         file = h5py.File(file_name, 'r')
         data = self.get_data(file, file_num)
@@ -356,6 +356,7 @@ class Subplot(Plot):
         self.file_names = []
         self.general_keys = list(self.types.keys())
         self.flag = subplot_flag
+        self.sig_0 = 6
         self.read_general_parameters(text, num)
         self.get_file_names()
         self.count_sides()
@@ -403,7 +404,8 @@ class Subplot(Plot):
             else:
                 new2 = glob.iglob(folder + '/*' + fnames[index] + '*.h5')
             first = next(new2)
-            first = first[:len(first) - 9]  # removes 000000.h5
+            self.sig_0 = len(first.split('-')[-1]) - 3
+            first = first[:len(first) - self.sig_0 - 3]  # removes 000000.h5
             self.file_names.append(first)
 
     def get_nfac(self, index):
@@ -508,7 +510,7 @@ class Subplot(Plot):
                 if (self.general_dict['side'][file_num] == key):
                     nstart, ndump, nend = self.get_nfac(file_num)
                     nn = ndump * n_ind + nstart
-                    file = h5py.File(self.file_names[file_num] + str(int(1000000 + nn))[1:] + '.h5', 'r')
+                    file = h5py.File(self.file_names[file_num] + f'{nn:0{self.sig_0}d}.h5', 'r')
                     plot_type = self.get_indices(file_num)[0]
 
                     if (plot_type == 'slice'):
@@ -580,7 +582,7 @@ class Subplot(Plot):
                             self.plot_grid(file, file_num, ax, fig)
                             nstart, ndump, nend = self.get_nfac(file_num+1)
                             nn = ndump * n_ind + nstart
-                            file2 = h5py.File(self.file_names[file_num+1] + str(int(1000000 + nn))[1:] + '.h5', 'r')
+                            file2 = h5py.File(self.file_names[file_num+1] + f'{nn:0{self.sig_0}d}.h5', 'r')
                             self.plot_contour(file, file2, file_num, ax, fig)
                             if 't_dec' in list(self.params.keys()):
                                 time_str = file.attrs['TIME'][0]

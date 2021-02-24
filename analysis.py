@@ -34,13 +34,13 @@ def analysis(data, ops_list, axes1=None, axes2=None):
         elif op == 'fft':
             ax = op.keywords.get('axes', None)
             data = np.fft.fftshift(np.fft.fftn(np.fft.ifftshift(data, axes=ax), **op.keywords), axes=ax)
-            if axes1 is not None:
+            if axes1 is not None and (ax is None or 1 in ax):
                 dx = axes1[1] - axes1[0]
                 if 'mode_num' in ops_list:
                     axes1 = np.fft.fftshift(np.fft.fftfreq(len(axes1),1./len(axes1)))
                 else:
                     axes1 = 2*np.pi*np.fft.fftshift(np.fft.fftfreq(len(axes1),dx))
-            if axes2 is not None:
+            if axes2 is not None and (ax is None or 0 in ax):
                 dx = axes2[1] - axes2[0]
                 if 'mode_num' in ops_list:
                     axes2 = np.fft.fftshift(np.fft.fftfreq(len(axes2),1./len(axes2)))

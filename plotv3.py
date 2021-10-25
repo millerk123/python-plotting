@@ -899,7 +899,7 @@ class Subplot(Plot):
         elif 't_rise' in d:
             # Calculate fields based on antenna
             length = d['t_rise'] + d['t_flat'] + d['t_fall']
-            x = t - d['delay'] - z
+            x = t - d['delay'] - z + z[0]
             inds = [ x<length, x<d['t_rise']+d['t_flat'], x<d['t_rise'], x<0.0 ]
 
             # Piecewise function done in reverse order of if else to make the last one true
@@ -944,6 +944,12 @@ class Subplot(Plot):
             data, axis1, axis2 = analysis(data, self.general_dict['operation'], axes1=axis1, axes2=axis2)
         if ('operation' in list(self.general_dict.keys())):
             axis2 = reflect(axis2, self.general_dict['operation'])
+        if ('transpose' in list(self.general_dict.keys())):
+            if self.general_dict['operation']:
+                axis3 = np.copy(axis1)
+                axis1 = np.copy(axis2)
+                axis2 = axis3
+                data = data.T
         grid_bounds = [axis1[0], axis1[-1], axis2[0], axis2[-1]]
 
         maximum, minimum = self.get_min_max(file_num)
@@ -960,9 +966,9 @@ class Subplot(Plot):
 
             threshold = self.general_dict['log_threshold'][file_num]
             imAx = ax.imshow(data, aspect='auto', origin='lower', \
-                             interpolation='bilinear', vmin=new_min, vmax=new_max, \
-                             norm=matplotlib.colors.SymLogNorm(threshold), extent=grid_bounds,
-                             cmap=self.get_colormap(file_num))
+                             interpolation='bilinear', \
+                             norm=matplotlib.colors.SymLogNorm(threshold,vmin=new_min,vmax=new_max), \
+                             extent=grid_bounds, cmap=self.get_colormap(file_num))
         else:
             imAx = ax.imshow(data, aspect='auto', origin='lower', \
                              interpolation='bilinear', vmin=minimum, vmax=maximum, extent=grid_bounds,

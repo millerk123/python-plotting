@@ -836,7 +836,7 @@ class Subplot(Plot):
             else:
                 ind = 1
             threshold = self.general_dict['log_threshold'][ind]
-            plt.yscale('symlog', linthreshy=threshold, vmin=minimum, vmax=maximum)
+            plt.yscale('symlog', linthresh=threshold)
             ax.set_ylim([minimum, maximum])
 
         else:
@@ -970,9 +970,14 @@ class Subplot(Plot):
                              norm=matplotlib.colors.SymLogNorm(threshold,vmin=new_min,vmax=new_max), \
                              extent=grid_bounds, cmap=self.get_colormap(file_num))
         else:
-            imAx = ax.imshow(data, aspect='auto', origin='lower', \
-                             interpolation='bilinear', vmin=minimum, vmax=maximum, extent=grid_bounds,
-                             cmap=self.get_colormap(file_num),norm=self.get_norm(file_num))
+            if self.get_norm(file_num) is None:
+                imAx = ax.imshow(data, aspect='auto', origin='lower', \
+                                 interpolation='bilinear', vmin=minimum, vmax=maximum, extent=grid_bounds,
+                                 cmap=self.get_colormap(file_num))
+            else:
+                imAx = ax.imshow(data, aspect='auto', origin='lower', \
+                                 interpolation='bilinear', extent=grid_bounds,
+                                 cmap=self.get_colormap(file_num),norm=self.get_norm(file_num,vmin=minimum,vmax=maximum))
 
         indices = self.get_indices(file_num)
         selectors = indices[1:-1]
@@ -1147,9 +1152,9 @@ class Subplot(Plot):
         else:
             return None
 
-    def get_norm(self, file_num):
+    def get_norm(self, file_num, **kwargs):
         if ('midpoint' in list(self.general_dict.keys())):
-            return MidpointNormalize(midpoint=self.general_dict['midpoint'][file_num])
+            return MidpointNormalize(midpoint=self.general_dict['midpoint'][file_num],**kwargs)
         else:
             return None
 

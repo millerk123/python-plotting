@@ -74,6 +74,14 @@ cdict_Jet = {'red':  ((0.0, 0.0, 0.0),
                    (1.0, 0.0, 0.0))
         }
 
+def mid_norm(im,midpoint=0.0):
+    vmin,vmax=im.get_clim()
+    cmap=im.get_cmap()
+    norm=matplotlib.colors.TwoSlopeNorm(midpoint)
+    # newcmp = matplotlib.colors.ListedColormap(cmap(norm(np.linspace(vmin, vmax, int(256*np.max([vmax-midpoint,midpoint-vmin])/(vmax-vmin)/0.5)))))
+    newcmp = matplotlib.colors.ListedColormap(cmap(norm(np.linspace(vmin, vmax, 256))))
+    im.set_cmap(newcmp)
+
 
 def main():
     args = sys.argv
@@ -564,7 +572,8 @@ class Subplot(Plot):
                                         print("Valid values are 'old', 'total', 'transverse', 'modal', or an integer")
                                         sys.exit("Exiting program")
 
-                                axd2=plt.scatter(dla_stuff[0][:,0,ind],y_dat,s=4,c=c_dat,cmap='PiYG',norm=MidpointNormalize(midpoint=0))
+                                axd2=plt.scatter(dla_stuff[0][:,0,ind],y_dat,s=4,c=c_dat,cmap='PiYG')
+                                mid_norm( axd2, midpoint=0 )
 
                                 divider = make_axes_locatable(plt.gca())
                                 cax2 = divider.new_horizontal(size="5%", pad=0.7, pack_start=True)
@@ -970,14 +979,15 @@ class Subplot(Plot):
                              norm=matplotlib.colors.SymLogNorm(threshold,vmin=new_min,vmax=new_max), \
                              extent=grid_bounds, cmap=self.get_colormap(file_num))
         else:
-            if self.get_norm(file_num) is None:
+            if self.get_midpoint(file_num) is None:
                 imAx = ax.imshow(data, aspect='auto', origin='lower', \
                                  interpolation='bilinear', vmin=minimum, vmax=maximum, extent=grid_bounds,
                                  cmap=self.get_colormap(file_num))
             else:
                 imAx = ax.imshow(data, aspect='auto', origin='lower', \
                                  interpolation='bilinear', extent=grid_bounds,
-                                 cmap=self.get_colormap(file_num),norm=self.get_norm(file_num,vmin=minimum,vmax=maximum))
+                                 cmap=self.get_colormap(file_num))
+                mid_norm( imAx, self.get_midpoint(file_num) )
 
         indices = self.get_indices(file_num)
         selectors = indices[1:-1]
@@ -1152,9 +1162,9 @@ class Subplot(Plot):
         else:
             return None
 
-    def get_norm(self, file_num, **kwargs):
+    def get_midpoint(self, file_num, **kwargs):
         if ('midpoint' in list(self.general_dict.keys())):
-            return MidpointNormalize(midpoint=self.general_dict['midpoint'][file_num],**kwargs)
+            return self.general_dict['midpoint'][file_num]
         else:
             return None
 
@@ -1230,17 +1240,6 @@ class Subplot(Plot):
             return 1, 'AXIS2'
         else:
             return 2, 'AXIS3'
-
-class MidpointNormalize(matplotlib.colors.Normalize):
-    def __init__(self, vmin=None, vmax=None, midpoint=None, clip=False):
-        self.midpoint = midpoint
-        matplotlib.colors.Normalize.__init__(self, vmin, vmax, clip)
-
-    def __call__(self, value, clip=None):
-        # I'm ignoring masked values and all kinds of edge cases to make a
-        # simple example...
-        x, y = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
-        return np.ma.masked_array(np.interp(value, x, y))
 
 
 if __name__ == "__main__":

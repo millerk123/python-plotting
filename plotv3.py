@@ -297,7 +297,8 @@ class Plot:
             # Read in all parameters that will be used for calculating the laser amplitude
             for i in range(len(data)):
                 if 'quasi-3D' in data[i]:
-                    q3d = True
+                    if '!' not in data[i].split("quasi-3D")[0]:
+                        q3d = True
                 if 'node_number' in data[i]:
                     if q3d:
                         self.laser_params['dimension'] = 3

@@ -986,7 +986,7 @@ class Subplot(Plot):
                                  cmap=self.get_colormap(file_num))
             else:
                 imAx = ax.imshow(data, aspect='auto', origin='lower', \
-                                 interpolation='bilinear', extent=grid_bounds,
+                                 interpolation='bilinear', vmin=minimum, vmax=maximum, extent=grid_bounds,
                                  cmap=self.get_colormap(file_num))
                 mid_norm( imAx, self.get_midpoint(file_num) )
 

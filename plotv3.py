@@ -181,8 +181,8 @@ def read_dla_tracks(plots):
 
 
 def visualize(plot, indices, dla_stuff):
-    plt.register_cmap(cmap=matplotlib.colors.LinearSegmentedColormap('BlueRed',cdict_BR))
-    plt.register_cmap(cmap=matplotlib.colors.LinearSegmentedColormap('Jet',cdict_Jet))
+    if 'BlueRed' not in plt.colormaps(): plt.register_cmap(cmap=matplotlib.colors.LinearSegmentedColormap('BlueRed',cdict_BR))
+    if 'Jet' not in plt.colormaps(): plt.register_cmap(cmap=matplotlib.colors.LinearSegmentedColormap('Jet',cdict_Jet))
     subplots = plot.subplots
     title = ''
     for num in range(len(subplots)):

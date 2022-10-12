@@ -22,57 +22,6 @@ cpu_count = multiprocessing.cpu_count()
 times = np.array([])
 # match commas not inside single or double quotes
 option_pattern = re.compile(''',(?=(?:(?:[^"']*"[^"']*")|(?:[^'"]*'[^'"]*'))*[^"']*$)''')
-delta = 0.01
-cdict_BR = {'red':  ((0.0, 0.0, 0.0),
-                   (0.25, 0.0, 0.0),
-                   (.5-delta, 0.9, 0.9),
-                   (0.5, 1.0, 1.0),
-                   (0.75, 1.0, 1.0),
-                   (1.0, 0.35, 1.0)),
-
-         'green': ((0.0, 0.0, 0.0),
-                   (0.25, 0.0, 0.0),
-                   (0.5-delta, 0.9, 0.9),
-                   (0.5, 1.0, 1.0),
-                   (0.5+delta, 0.9, 0.9),
-                   (0.75, 0.0, 0.0),
-                   (1.0, 0.0, 0.0)),
-
-         'blue':  ((0.0, 0.0, 0.35),
-                   (0.25, 1.0, 1.0),
-                   (0.5, 1.0, 1.0),
-                   (0.5+delta, 0.9, 0.9),
-                   (0.75, 0.0, 0.0),
-                   (1.0, 0.0, 0.0))
-        }
-
-delta = 0.04
-cm = matplotlib.cm.get_cmap('jet')
-cdict_Jet = {'red':  ((0.0, 0.0, 0.0),
-                   (0.35, 0.0, 0.0),
-                   (0.5-delta, cm(0.5-delta)[0], cm(0.5-delta)[0]),
-                   (0.5, 1.0, 1.0),
-                   (0.5+delta, cm(0.5+delta)[0], cm(0.5+delta)[0]),
-                   (0.66, 1.0, 1.0),
-                   (0.89, 1.0, 1.0),
-                   (1.0, 0.5, 0.5)),
-
-         'green': ((0.0, 0.0, 0.0),
-                   (0.12, 0.0, 0.0),
-                   (0.38, 1.0, 1.0),
-                   (0.64, 1.0, 1.0),
-                   (0.91, 0.0, 0.0),
-                   (1.0, 0.0, 0.0)),
-
-         'blue':  ((0.0, 0.5, 0.5),
-                   (0.11, 1.0, 1.0),
-                   (0.34, 1.0, 1.0),
-                   (0.5-delta, cm(0.5-delta)[2], cm(0.5-delta)[2]),
-                   (0.5, 1.0, 1.0),
-                   (0.5+delta, cm(0.5+delta)[2], cm(0.5+delta)[2]),
-                   (0.65, 0.0, 0.0),
-                   (1.0, 0.0, 0.0))
-        }
 
 def mid_norm(im,midpoint=0.0):
     vmin,vmax=im.get_clim()
@@ -81,6 +30,29 @@ def mid_norm(im,midpoint=0.0):
     # newcmp = matplotlib.colors.ListedColormap(cmap(norm(np.linspace(vmin, vmax, int(256*np.max([vmax-midpoint,midpoint-vmin])/(vmax-vmin)/0.5)))))
     newcmp = matplotlib.colors.ListedColormap(cmap(norm(np.linspace(vmin, vmax, 256))))
     im.set_cmap(newcmp)
+
+def make_colormap( cmap_def, name, reg, intrude, power ):
+    if name not in plt.colormaps():
+        vals = cmap_def(np.arange(cmap_def.N))
+        inds = np.arange(reg)
+        dat_lower = vals[inds,:]
+        dat_lower[:,:3] = np.tile(vals[intrude,:3],(reg,1)) + (1-np.tile(vals[intrude,:3],(reg,1))) * np.power(1-np.tile(inds/reg,(3,1)).T,power)
+        cmap_cust = mpl.colors.ListedColormap(np.vstack((dat_lower,vals[intrude:,:])), N=cmap_def.N+reg-intrude, name=name)
+        plt.register_cmap(cmap=cmap_cust)
+        cmap_cust = mpl.colors.ListedColormap(np.flip(np.vstack((dat_lower,vals[intrude:,:])),axis=0), N=cmap_def.N+reg-intrude, name=name+'_r')
+        plt.register_cmap(cmap=cmap_cust)
+
+def make_colormap_middle( cmap_def, name, reg, power ):
+    if name not in plt.colormaps():
+        vals = cmap_def(np.arange(cmap_def.N))
+        inds1 = np.arange(int(cmap_def.N/2),int(cmap_def.N/2)+reg)
+        vals[inds1,:3] = vals[inds1,:3] + (1-vals[inds1,:3]) * np.power(1-np.tile((inds1-inds1[0])/reg,(3,1)).T,power)
+        inds2 = np.arange(int(cmap_def.N/2)-reg,int(cmap_def.N/2))
+        vals[inds2,:3] = vals[inds2,:3] + (1-vals[inds2,:3]) * np.power(1-np.tile(np.abs(inds2-inds2[-1])/reg,(3,1)).T,power)
+        cmap_cust = mpl.colors.ListedColormap(vals, N=cmap_def.N, name=name)
+        plt.register_cmap(cmap=cmap_cust)
+        cmap_cust = mpl.colors.ListedColormap(np.flip(vals,axis=0), N=cmap_def.N, name=name+'_r')
+        plt.register_cmap(cmap=cmap_cust)
 
 
 def main():
@@ -181,8 +153,21 @@ def read_dla_tracks(plots):
 
 
 def visualize(plot, indices, dla_stuff):
-    if 'BlueRed' not in plt.colormaps(): plt.register_cmap(cmap=matplotlib.colors.LinearSegmentedColormap('BlueRed',cdict_BR))
-    if 'Jet' not in plt.colormaps(): plt.register_cmap(cmap=matplotlib.colors.LinearSegmentedColormap('Jet',cdict_Jet))
+    make_colormap( cc.m_rainbow, 'Rainbow', 20, 0, 1.5 )
+    make_colormap( cc.m_rainbow4, 'Rainbow4', 20, 0, 1.5 )
+    make_colormap( cc.m_bgy, 'BGY', 20, 0, 1.5 )
+    make_colormap( cc.m_gouldian, 'Gouldian', 20, 0, 1.5 )
+    make_colormap( cc.m_bmw, 'BMW', 20, 0, 1.5 )
+    make_colormap( cc.m_bmy, 'BMY', 20, 0, 1.5 )
+    make_colormap( cc.m_linear_kry_5_95_c72, 'Fire', 20, 0, 1.5 )
+    make_colormap_middle( mpl.cm.jet, 'Jet', 15, 2.0 )
+    make_colormap_middle( cc.m_CET_R3, 'Jet2', 15, 2.0 )
+    make_colormap_middle( cc.m_CET_D13, 'BG', 10, 2.0 )
+    make_colormap_middle( cc.m_CET_D1A, 'BR', 10, 2.0 )
+    make_colormap_middle( cc.m_gwv, 'GP', 10, 2.0 )
+    make_colormap_middle( cc.m_CET_D3, 'GR', 10, 2.0 )
+    make_colormap_middle( cc.m_CET_D10, 'BP', 10, 2.0 )
+    make_colormap_middle( cc.m_coolwarm, 'Coolwarm', 10, 2.0 )
     subplots = plot.subplots
     title = ''
     for num in range(len(subplots)):

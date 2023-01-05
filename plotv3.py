@@ -12,6 +12,7 @@ from analysis import analysis, reflect
 import re
 from str2keywords import str2keywords
 import gc
+import colorcet as cc
 # global parameters
 
 
@@ -342,7 +343,7 @@ class Subplot(Plot):
                       'colormap': str, 'midpoint': float, 'legend': str, 'markers': str, \
                       'x1_lims': float, 'x2_lims': float, 'x3_lims': float, 'norm': str, 'side': str, 'bounds': str, \
                       'use_dir': str, 'linewidth': float, 'operation': str2keywords, 'transpose': bool, \
-                      'x_label': str, 'y_label': str, 'dla_tracks': str }
+                      'x_label': str, 'y_label': str, 'dla_tracks': str, 'fake_cbar': bool, 'fake_annotate': str }
         self.left = 0
         self.right = 0
         self.general_dict = {}
@@ -852,10 +853,22 @@ class Subplot(Plot):
                        plt.ylim(top=np.max([maximum,lsr_amp.max()]))
 
         ax.set_xlim(self.get_x_lims('x1'))
+        if self.get_x_lims('x1') is None:
+            ax.set_xlim([np.min(xx),np.max(xx)])
 
         self.set_labels(ax, file, axes, file_num)
 
         plt.title(self.general_dict['title'][file_num],fontsize = self.fontsize())
+
+        if ('fake_cbar' in list(self.general_dict.keys())):
+            if self.general_dict['fake_cbar']:
+                sm = plt.cm.ScalarMappable(cmap='viridis', norm=plt.Normalize(vmin=0, vmax=1))
+                cb=plt.colorbar(sm)
+                cb.set_label('Hi')
+                cb.remove()
+
+        if ('fake_annotate' in list(self.general_dict.keys())):
+            plt.annotate(self.general_dict['fake_annotate'],(0.5,0.5),(1.01,0.5), xycoords=plt.gca().transAxes, textcoords=plt.gca().transAxes, color='w')
 
     def get_linewidth(self):
         if ('linewidth' in list(self.general_dict.keys())):

@@ -343,7 +343,8 @@ class Subplot(Plot):
                       'colormap': str, 'midpoint': float, 'legend': str, 'markers': str, \
                       'x1_lims': float, 'x2_lims': float, 'x3_lims': float, 'norm': str, 'side': str, 'bounds': str, \
                       'use_dir': str, 'linewidth': float, 'operation': str2keywords, 'transpose': bool, \
-                      'x_label': str, 'y_label': str, 'dla_tracks': str, 'fake_cbar': bool, 'fake_annotate': str }
+                      'x_label': str, 'y_label': str, 'dla_tracks': str, 'fake_cbar': bool, 'fake_annotate': str, \
+                      'plot_vac': bool }
         self.left = 0
         self.right = 0
         self.general_dict = {}
@@ -844,13 +845,15 @@ class Subplot(Plot):
         if ('operation' in list(self.general_dict.keys())):
             for op in self.general_dict['operation']:
                 if op == 'hilbert_env':
-                    zpulse_keys = ["lon_rise","lon_flat","lon_fall","lon_start","per_w0","per_focus"]
-                    antenna_keys = ["t_rise","t_flat","t_fall","delay","rad_x","focus"]
-                    if all([k in self.laser_params for k in zpulse_keys]) or \
-                       all([k in self.laser_params for k in antenna_keys]):
-                       lsr_amp = self.laser_amp(xx,file.attrs['TIME'][0])
-                       ax.plot(xx, lsr_amp, '--', label='vacuum', linewidth=self.get_linewidth() )
-                       plt.ylim(top=np.max([maximum,lsr_amp.max()]))
+                    if ('plot_vac' in list(self.general_dict.keys())):
+                        if self.general_dict['plot_vac']:
+                            zpulse_keys = ["lon_rise","lon_flat","lon_fall","lon_start","per_w0","per_focus"]
+                            antenna_keys = ["t_rise","t_flat","t_fall","delay","rad_x","focus"]
+                            if all([k in self.laser_params for k in zpulse_keys]) or \
+                               all([k in self.laser_params for k in antenna_keys]):
+                               lsr_amp = self.laser_amp(xx,file.attrs['TIME'][0])
+                               ax.plot(xx, lsr_amp, '--', label='vacuum', linewidth=self.get_linewidth() )
+                               plt.ylim(top=np.max([maximum,lsr_amp.max()]))
 
         ax.set_xlim(self.get_x_lims('x1'))
         if self.get_x_lims('x1') is None:

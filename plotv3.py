@@ -458,12 +458,18 @@ class Subplot(Plot):
                 maxs[1] = max(maxs[1], mx)
         if ('maximum' in list(self.general_dict.keys())):
             for ind in range(len(self.general_dict['maximum'])):
-                if (self.general_dict['maximum'] != 'None'):
-                    maxs[ind] = self.general_dict['maximum'][ind]
+                if (self.general_dict['maximum'][ind] != 'None'):
+                    if (self.general_dict['side'][file_num] == 'left'):
+                        maxs[0] = self.general_dict['maximum'][ind]
+                    else:
+                        maxs[1] = self.general_dict['maximum'][ind]
         if ('minimum' in list(self.general_dict.keys())):
             for ind in range(len(self.general_dict['minimum'])):
-                if (self.general_dict['minimum'] != 'None'):
-                    mins[ind] = self.general_dict['minimum'][ind]
+                if (self.general_dict['minimum'][ind] != 'None'):
+                    if (self.general_dict['side'][file_num] == 'left'):
+                        mins[0] = self.general_dict['minimum'][ind]
+                    else:
+                        mins[1] = self.general_dict['minimum'][ind]
 
         self.general_dict['minimum'] = mins
         self.general_dict['maximum'] = maxs

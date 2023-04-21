@@ -344,7 +344,7 @@ class Subplot(Plot):
                       'x1_lims': float, 'x2_lims': float, 'x3_lims': float, 'norm': str, 'side': str, 'bounds': str, \
                       'use_dir': str, 'linewidth': float, 'operation': str2keywords, 'transpose': bool, \
                       'x_label': str, 'y_label': str, 'dla_tracks': str, 'fake_cbar': bool, 'fake_annotate': str, \
-                      'plot_vac': bool }
+                      'plot_vac': bool, 'pad': float, 'cblabel': str }
         self.left = 0
         self.right = 0
         self.general_dict = {}
@@ -459,14 +459,14 @@ class Subplot(Plot):
         if ('maximum' in list(self.general_dict.keys())):
             for ind in range(len(self.general_dict['maximum'])):
                 if (self.general_dict['maximum'][ind] != 'None'):
-                    if (self.general_dict['side'][file_num] == 'left'):
+                    if (self.general_dict['side'][ind] == 'left'):
                         maxs[0] = self.general_dict['maximum'][ind]
                     else:
                         maxs[1] = self.general_dict['maximum'][ind]
         if ('minimum' in list(self.general_dict.keys())):
             for ind in range(len(self.general_dict['minimum'])):
                 if (self.general_dict['minimum'][ind] != 'None'):
-                    if (self.general_dict['side'][file_num] == 'left'):
+                    if (self.general_dict['side'][ind] == 'left'):
                         mins[0] = self.general_dict['minimum'][ind]
                     else:
                         mins[1] = self.general_dict['minimum'][ind]
@@ -623,7 +623,15 @@ class Subplot(Plot):
             # else:
             #     ax.legend(loc=2)
 
-    def add_colorbar(self, imAx, label, ticks, ax, fig):
+    def add_colorbar(self, imAx, label_, ticks, file_num, ax, fig):
+        if ('pad' in list(self.general_dict.keys())):
+            pad = self.general_dict['pad'][file_num]
+        else:
+            pad = 0.075
+        if ('cblabel' in list(self.general_dict.keys())):
+            label = self.general_dict['cblabel'][file_num]
+        else:
+            label = label_
         plt.minorticks_on()
         # divider = make_axes_locatable(ax)
         # cax = divider.append_axes("right", size="2%", pad=0.05)
@@ -632,7 +640,7 @@ class Subplot(Plot):
         # divider = make_axes_locatable(ax)
         # cax = divider.append_axes("right", size="2%", pad=0.05)
         if (ticks == None):
-            cb = fig.colorbar(imAx, pad=0.075)
+            cb = fig.colorbar(imAx, pad=pad)
             cb.set_label(label, fontsize=self.fontsize())
             cb.ax.tick_params(labelsize=self.fontsize())
             cb.formatter.set_powerlimits((0, 0))
@@ -640,7 +648,7 @@ class Subplot(Plot):
             # cb.locator = mpl.ticker.MaxNLocator(nbins=5)
             cb.update_ticks()
         else:
-            cb = fig.colorbar(imAx, pad=0.075, ticks=ticks, format=ticker.FuncFormatter(fmt))
+            cb = fig.colorbar(imAx, pad=pad, ticks=ticks, format=ticker.FuncFormatter(fmt))
             cb.set_label(label, fontsize=self.fontsize())
             cb.ax.tick_params(labelsize=self.fontsize())
 
@@ -1005,9 +1013,9 @@ class Subplot(Plot):
             long_name = self.get_name(file) + self.append_legend(file_num) + r'$\/$' + self.get_units(file)
 
         if (self.is_log_plot(file_num)):
-            self.add_colorbar(imAx, long_name, self.mod_tickers(minimum, maximum, threshold), ax, fig)
+            self.add_colorbar(imAx, long_name, self.mod_tickers(minimum, maximum, threshold), file_num, ax, fig)
         else:
-            self.add_colorbar(imAx, long_name, None, ax, fig)
+            self.add_colorbar(imAx, long_name, None, file_num, ax, fig)
 
         self.set_labels(ax, file, axes, file_num)
 
@@ -1067,9 +1075,11 @@ class Subplot(Plot):
                     ax.set_xlabel(self.axis_label(file, axes[0], selectors[0]), fontsize=self.fontsize())
                     ax.set_ylabel(self.get_units(file, 'q'), fontsize=self.fontsize())
         if ('x_label' in list(self.general_dict.keys())):
-            ax.set_xlabel(self.general_dict['x_label'][0], fontsize=self.fontsize())
+            if (self.general_dict['x_label'][file_num] != 'None'):
+                ax.set_xlabel(self.general_dict['x_label'][file_num], fontsize=self.fontsize())
         if ('y_label' in list(self.general_dict.keys())):
-            ax.set_ylabel(self.general_dict['y_label'][0], fontsize=self.fontsize())
+            if (self.general_dict['y_label'][file_num] != 'None'):
+                ax.set_ylabel(self.general_dict['y_label'][file_num], fontsize=self.fontsize())
         ax.tick_params(labelsize=self.fontsize())
 
     def get_marker(self, file_num):

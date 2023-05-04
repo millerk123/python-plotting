@@ -341,7 +341,8 @@ class Subplot(Plot):
         self.types = {'folders': str, 'fnames': str, 'title': str, 'log_threshold': float, \
                       'plot_type': str, 'maximum': float, 'minimum': float, \
                       'colormap': str, 'midpoint': float, 'legend': str, 'markers': str, \
-                      'x1_lims': float, 'x2_lims': float, 'x3_lims': float, 'norm': str, 'side': str, 'bounds': str, \
+                      'x1_lims': float, 'x2_lims': float, 'x3_lims': float, 'rel_lims_x1': float, \
+                      'norm': str, 'side': str, 'bounds': str, \
                       'use_dir': str, 'linewidth': float, 'operation': str2keywords, 'transpose': bool, \
                       'x_label': str, 'y_label': str, 'dla_tracks': str, 'fake_cbar': bool, 'fake_annotate': str, \
                       'plot_vac': bool, 'pad': float, 'cblabel': str }
@@ -481,11 +482,20 @@ class Subplot(Plot):
         else:
             return self.general_dict['maximum'][1], self.general_dict['minimum'][1]
 
-    def get_x_lims(self, ax):
+    def get_x_lims(self, ax, curr_lims=None):
         if (ax+'_lims' in list(self.general_dict.keys())):
             lims = np.zeros(2)
             for ind in range(len(self.general_dict[ax+'_lims'])):
                 lims[ind] = self.general_dict[ax+'_lims'][ind]
+            return lims
+        elif ('rel_lims_'+ax in list(self.general_dict.keys())):
+            if curr_lims is None:
+                print("When using '"+ax+"_lims_rel', curr_lims must be provided")
+                print("to the get_x_lims function")
+                sys.exit("Exiting program")
+            lims = np.zeros(2)
+            for ind in range(len(self.general_dict['rel_lims_'+ax])):
+                lims[ind] = curr_lims[ind] + self.general_dict['rel_lims_'+ax][ind]
             return lims
         else:
             return None
@@ -869,8 +879,8 @@ class Subplot(Plot):
                                ax.plot(xx, lsr_amp, '--', label='vacuum', linewidth=self.get_linewidth() )
                                plt.ylim(top=np.max([maximum,lsr_amp.max()]))
 
-        ax.set_xlim(self.get_x_lims('x1'))
-        if self.get_x_lims('x1') is None:
+        ax.set_xlim(self.get_x_lims('x1',curr_lims=[np.min(xx),np.max(xx)]))
+        if self.get_x_lims('x1',curr_lims=[np.min(xx),np.max(xx)]) is None:
             ax.set_xlim([np.min(xx),np.max(xx)])
 
         self.set_labels(ax, file, axes, file_num)
@@ -1019,7 +1029,7 @@ class Subplot(Plot):
 
         self.set_labels(ax, file, axes, file_num)
 
-        ax.set_xlim(self.get_x_lims('x1'))
+        ax.set_xlim(self.get_x_lims('x1',curr_lims=ax.get_xlim()))
         ax.set_ylim(self.get_x_lims('x2'))
 
         plt.title(self.general_dict['title'][file_num],fontsize = self.fontsize())

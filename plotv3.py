@@ -39,9 +39,9 @@ def make_colormap( cmap_def, name, reg, intrude, power ):
         dat_lower = vals[inds,:]
         dat_lower[:,:3] = np.tile(vals[intrude,:3],(reg,1)) + (1-np.tile(vals[intrude,:3],(reg,1))) * np.power(1-np.tile(inds/reg,(3,1)).T,power)
         cmap_cust = mpl.colors.ListedColormap(np.vstack((dat_lower,vals[intrude:,:])), N=cmap_def.N+reg-intrude, name=name)
-        plt.register_cmap(cmap=cmap_cust)
+        mpl.colormaps.register(cmap_cust)
         cmap_cust = mpl.colors.ListedColormap(np.flip(np.vstack((dat_lower,vals[intrude:,:])),axis=0), N=cmap_def.N+reg-intrude, name=name+'_r')
-        plt.register_cmap(cmap=cmap_cust)
+        mpl.colormaps.register(cmap_cust)
 
 def make_colormap_middle( cmap_def, name, reg, power ):
     if name not in plt.colormaps():
@@ -51,9 +51,9 @@ def make_colormap_middle( cmap_def, name, reg, power ):
         inds2 = np.arange(int(cmap_def.N/2)-reg,int(cmap_def.N/2))
         vals[inds2,:3] = vals[inds2,:3] + (1-vals[inds2,:3]) * np.power(1-np.tile(np.abs(inds2-inds2[-1])/reg,(3,1)).T,power)
         cmap_cust = mpl.colors.ListedColormap(vals, N=cmap_def.N, name=name)
-        plt.register_cmap(cmap=cmap_cust)
+        mpl.colormaps.register(cmap_cust)
         cmap_cust = mpl.colors.ListedColormap(np.flip(vals,axis=0), N=cmap_def.N, name=name+'_r')
-        plt.register_cmap(cmap=cmap_cust)
+        mpl.colormaps.register(cmap_cust)
 
 
 def main():

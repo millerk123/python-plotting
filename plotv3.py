@@ -493,7 +493,7 @@ class Subplot(Plot):
             return lims
         elif ('rel_lims_'+ax in list(self.general_dict.keys())):
             if curr_lims is None:
-                print("When using '"+ax+"_lims_rel', curr_lims must be provided")
+                print("When using 'rel_lims_"+ax+"', curr_lims must be provided")
                 print("to the get_x_lims function")
                 sys.exit("Exiting program")
             lims = np.zeros(2)
@@ -1003,17 +1003,17 @@ class Subplot(Plot):
                 new_min = minimum / np.abs(minimum) * 10 ** (int(np.log10(np.abs(minimum))) + 1)
 
             threshold = self.general_dict['log_threshold'][file_num]
-            imAx = ax.imshow(data, aspect=self.general_dict['aspect'], origin='lower', \
+            imAx = ax.imshow(data, aspect=self.general_dict['aspect'][file_num], origin='lower', \
                              interpolation='bilinear', \
                              norm=matplotlib.colors.SymLogNorm(threshold,vmin=new_min,vmax=new_max), \
                              extent=grid_bounds, cmap=self.get_colormap(file_num))
         else:
             if self.get_midpoint(file_num) is None:
-                imAx = ax.imshow(data, aspect=self.general_dict['aspect'], origin='lower', \
+                imAx = ax.imshow(data, aspect=self.general_dict['aspect'][file_num], origin='lower', \
                                  interpolation='bilinear', vmin=minimum, vmax=maximum, extent=grid_bounds,
                                  cmap=self.get_colormap(file_num))
             else:
-                imAx = ax.imshow(data, aspect=self.general_dict['aspect'], origin='lower', \
+                imAx = ax.imshow(data, aspect=self.general_dict['aspect'][file_num], origin='lower', \
                                  interpolation='bilinear', vmin=minimum, vmax=maximum, extent=grid_bounds,
                                  cmap=self.get_colormap(file_num))
                 mid_norm( imAx, self.get_midpoint(file_num) )

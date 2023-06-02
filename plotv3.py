@@ -216,7 +216,7 @@ class Plot:
         if ('dla_suffix' not in list(self.general_dict.keys())):
             self.general_dict['dla_suffix'] = ''
         # set aspect to auto if not present
-        if ('aspect' not in list(self.general_dict.keys())):
+        if ('aspect' not in list(self.general_dict.keys()) and 'folders' in list(self.general_dict.keys())):
             self.general_dict['aspect'] = ['auto']*len(self.general_dict['folders'])
 
         # set cpu_count if included

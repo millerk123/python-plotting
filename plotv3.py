@@ -215,6 +215,9 @@ class Plot:
         # set dla_suffix to empty string if not present
         if ('dla_suffix' not in list(self.general_dict.keys())):
             self.general_dict['dla_suffix'] = ''
+        # set aspect to auto if not present
+        if ('aspect' not in list(self.general_dict.keys())):
+            self.general_dict['aspect'] = 'auto'
 
         # set cpu_count if included
         if 'cpu_count' in self.general_dict.keys():
@@ -345,7 +348,7 @@ class Subplot(Plot):
                       'norm': str, 'side': str, 'bounds': str, \
                       'use_dir': str, 'linewidth': float, 'operation': str2keywords, 'transpose': bool, \
                       'x_label': str, 'y_label': str, 'dla_tracks': str, 'fake_cbar': bool, 'fake_annotate': str, \
-                      'plot_vac': bool, 'pad': float, 'cblabel': str }
+                      'plot_vac': bool, 'pad': float, 'cblabel': str, 'aspect': str }
         self.left = 0
         self.right = 0
         self.general_dict = {}
@@ -1000,17 +1003,17 @@ class Subplot(Plot):
                 new_min = minimum / np.abs(minimum) * 10 ** (int(np.log10(np.abs(minimum))) + 1)
 
             threshold = self.general_dict['log_threshold'][file_num]
-            imAx = ax.imshow(data, aspect='auto', origin='lower', \
+            imAx = ax.imshow(data, aspect=self.general_dict['aspect'], origin='lower', \
                              interpolation='bilinear', \
                              norm=matplotlib.colors.SymLogNorm(threshold,vmin=new_min,vmax=new_max), \
                              extent=grid_bounds, cmap=self.get_colormap(file_num))
         else:
             if self.get_midpoint(file_num) is None:
-                imAx = ax.imshow(data, aspect='auto', origin='lower', \
+                imAx = ax.imshow(data, aspect=self.general_dict['aspect'], origin='lower', \
                                  interpolation='bilinear', vmin=minimum, vmax=maximum, extent=grid_bounds,
                                  cmap=self.get_colormap(file_num))
             else:
-                imAx = ax.imshow(data, aspect='auto', origin='lower', \
+                imAx = ax.imshow(data, aspect=self.general_dict['aspect'], origin='lower', \
                                  interpolation='bilinear', vmin=minimum, vmax=maximum, extent=grid_bounds,
                                  cmap=self.get_colormap(file_num))
                 mid_norm( imAx, self.get_midpoint(file_num) )

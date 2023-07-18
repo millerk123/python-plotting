@@ -268,7 +268,7 @@ class Plot:
             if (ignore_flag in line):
                 line = line[:line.find(ignore_flag)]
             for key in self.general_keys:
-                if (key in line.lower()):
+                if (key in line.split("=")[0].lower()):
                     self.general_dict[key] = self.tokenize_line(line, self.types[key])
 
     def tokenize_line(self, str, cast_type):

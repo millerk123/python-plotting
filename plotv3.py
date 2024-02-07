@@ -905,7 +905,7 @@ class Subplot(Plot):
         if ('fake_cbar' in list(self.general_dict.keys())):
             if self.general_dict['fake_cbar']:
                 sm = plt.cm.ScalarMappable(cmap='viridis', norm=plt.Normalize(vmin=0, vmax=1))
-                cb=plt.colorbar(sm)
+                cb=plt.colorbar(sm, ax=plt.gca())
                 cb.set_label('Hi')
                 cb.remove()
 

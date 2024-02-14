@@ -360,7 +360,7 @@ class Subplot(Plot):
                       'norm': str, 'side': str, 'bounds': str, \
                       'use_dir': str, 'linewidth': float, 'operation': str2keywords, 'transpose': bool, \
                       'x_label': str, 'y_label': str, 'dla_tracks': str, 'fake_cbar': bool, 'fake_annotate': str, \
-                      'plot_vac': bool, 'pad': float, 'cblabel': str, 'aspect': str }
+                      'plot_vac': bool, 'pad': float, 'cblabel': str, 'aspect': str, 'sig_split': str }
         self.left = 0
         self.right = 0
         self.general_dict = {}
@@ -416,7 +416,11 @@ class Subplot(Plot):
             else:
                 new2 = glob.iglob(folder + '/*' + fnames[index] + '*.h5')
             first = next(new2)
-            self.sig_0 = len(first.split('-')[-1]) - 3
+            if 'sig_split' in list(self.general_dict.keys()):
+                sig_split = self.general_dict['sig_split'][index]
+            else:
+                sig_split = "-"
+            self.sig_0 = len(first.split(sig_split)[-1]) - 3
             first = first[:len(first) - self.sig_0 - 3]  # removes 000000.h5
             self.file_names.append(first)
 

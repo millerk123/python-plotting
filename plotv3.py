@@ -687,7 +687,7 @@ class Subplot(Plot):
 
     def mod_tickers(self, minimum, maximum, threshold):
         out = []
-        epsilon = 1e-100
+        epsilon = 1e-30
         mu = int(np.log10(np.abs(maximum + epsilon))) + 1
         mx_sign, mn_sign = 1, -1
         if (maximum < 0):
